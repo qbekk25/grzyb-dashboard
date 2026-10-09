@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>🍄 Grzyby — live</title>
+<title>Grzyby — live</title>
 <style>
   :root {
     --bg:#08110a; --card:#10231a; --edge:#2f5d36; --edge2:#3f7a48;
@@ -14,75 +14,117 @@
   body {
     background:radial-gradient(ellipse at top,#0d1f13,#040805);
     color:var(--txt); font-family:'Poppins','Segoe UI',sans-serif;
-    margin:0; padding:20px; min-height:100vh;
+    margin:0; padding:24px; min-height:100vh;
   }
-  h1 { margin:0 0 6px; font-size:22px; color:var(--lime); letter-spacing:.5px; }
-  #bar { font-size:12px; color:var(--mut); margin-bottom:18px; display:flex;
-         align-items:center; gap:8px; flex-wrap:wrap; }
+  h1 { margin:0 0 8px; font-size:24px; color:var(--lime); letter-spacing:.5px; font-weight:700; }
+  #bar { font-size:12px; color:var(--mut); margin-bottom:22px; display:flex;
+         align-items:center; gap:10px; flex-wrap:wrap; }
   .live { display:inline-block; width:9px; height:9px; background:#4caf50;
           border-radius:50%; box-shadow:0 0 8px #4caf50; animation:p 1.4s infinite; }
   .live.off { background:#666; box-shadow:none; animation:none; }
   @keyframes p { 50% { opacity:.35; } }
-  .badge { display:inline-block; padding:2px 8px; border-radius:999px;
+  .badge { display:inline-block; padding:2px 9px; border-radius:999px;
            background:rgba(0,0,0,.5); border:1px solid var(--edge); font-size:11px; }
-  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:14px; }
+
+  /* 3 duże karty obok siebie, na węższych ekranach zawijają się */
+  .grid {
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:18px;
+    margin-bottom:24px;
+  }
+  @media (max-width:1100px) { .grid { grid-template-columns:repeat(2, 1fr); } }
+  @media (max-width:720px)  { .grid { grid-template-columns:1fr; } }
+
   .card {
     background:linear-gradient(180deg,var(--card),#08110a);
-    border:1px solid var(--edge); border-left:4px solid var(--edge);
-    border-radius:12px; padding:14px; display:flex; gap:12px; align-items:center;
-    transition:transform .15s, box-shadow .2s;
+    border:1px solid var(--edge); border-left:5px solid var(--edge);
+    border-radius:14px; padding:20px; display:flex; flex-direction:column;
+    gap:14px; transition:transform .15s, box-shadow .25s;
+    min-height:220px;
   }
-  .card:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,.5); }
-  .card.alive   { border-color:#4caf50; border-left-color:#4caf50; box-shadow:0 0 14px rgba(76,175,80,.15); }
-  .card.warn    { border-color:#ef5350; border-left-color:#ef5350; box-shadow:0 0 14px rgba(239,83,80,.2); }
+  .card:hover { transform:translateY(-3px); box-shadow:0 8px 24px rgba(0,0,0,.55); }
+  .card.alive   { border-color:#4caf50; border-left-color:#4caf50; box-shadow:0 0 18px rgba(76,175,80,.15); }
+  .card.warn    { border-color:#ef5350; border-left-color:#ef5350; box-shadow:0 0 18px rgba(239,83,80,.2); }
   .card.respawn { border-color:#42a5f5; border-left-color:#42a5f5; }
-  .card.ready   { border-color:#ce93d8; border-left-color:#ce93d8; box-shadow:0 0 14px rgba(206,147,216,.2); }
+  .card.ready   { border-color:#ce93d8; border-left-color:#ce93d8; box-shadow:0 0 18px rgba(206,147,216,.2); }
   .card.picked  { border-color:#546e7a; border-left-color:#546e7a; opacity:.65; }
   .card.rumor   { border-color:#42a5f5; border-left-color:#42a5f5; opacity:.85; }
-  .card img { width:56px; height:56px; image-rendering:pixelated; flex-shrink:0; }
-  .card .body { flex:1; min-width:0; }
-  .name { font-size:14px; font-weight:700; color:#e8f5e9; white-space:nowrap;
-          overflow:hidden; text-overflow:ellipsis; }
-  .meta { font-size:11px; color:var(--mut); line-height:1.4; margin-top:2px; }
-  .cat { font-size:9.5px; font-weight:700; letter-spacing:1px; text-transform:uppercase; }
-  .timer { font-family:'Courier New',monospace; font-size:22px; font-weight:800;
-           color:var(--lime); line-height:1; text-align:right; flex-shrink:0; }
-  .card.warn .timer { color:#ef5350; }
-  .card.respawn .timer { color:#64b5f6; }
-  .card.ready .timer { color:#ce93d8; }
-  .card.picked .timer { color:#808080; }
-  .section { margin:24px 0 12px; font-size:13px; font-weight:700; color:var(--amber);
-             text-transform:uppercase; letter-spacing:1.2px;
-             border-bottom:1px solid rgba(255,183,77,.2); padding-bottom:6px; }
-  .empty { color:#555; font-size:12px; padding:14px; text-align:center;
-           background:rgba(0,0,0,.25); border-radius:8px; font-style:italic; }
-  .target-card { background:linear-gradient(180deg,rgba(60,120,40,.25),rgba(30,70,20,.1));
-                 border:1px solid #8bc34a; border-radius:10px; padding:12px;
-                 display:flex; gap:14px; align-items:center; margin-bottom:10px; }
-  .target-card .icon { font-size:28px; }
-  .chip { display:inline-block; padding:3px 9px; border-radius:999px;
+
+  .card-top { display:flex; align-items:center; gap:14px; }
+  .card img { width:72px; height:72px; image-rendering:pixelated; flex-shrink:0; }
+  .name { font-size:16px; font-weight:700; color:#e8f5e9; line-height:1.25;
+          overflow:hidden; text-overflow:ellipsis; display:-webkit-box;
+          -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+  .lvl-tag { display:inline-block; margin-left:6px; padding:1px 7px; font-size:11px;
+             border-radius:6px; background:rgba(255,183,77,.15); color:#ffb74d;
+             border:1px solid rgba(255,183,77,.35); vertical-align:middle; font-weight:600; }
+
+  .cat { font-size:10px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase;
+         color:var(--mut); }
+  .card.alive   .cat { color:#66bb6a; }
+  .card.warn    .cat { color:#ef5350; }
+  .card.respawn .cat { color:#64b5f6; }
+  .card.ready   .cat { color:#ce93d8; }
+  .card.picked  .cat { color:#607d8b; }
+  .card.rumor   .cat { color:#64b5f6; }
+
+  .card-mid { display:flex; flex-direction:column; gap:4px; flex:1; }
+  .meta { font-size:12px; color:var(--mut); line-height:1.5; }
+  .meta b { color:#c5e1a5; font-weight:600; }
+
+  .timer-big {
+    font-family:'Courier New',monospace; font-size:34px; font-weight:800;
+    color:var(--lime); line-height:1; letter-spacing:1px;
+  }
+  .card.warn    .timer-big { color:#ef5350; }
+  .card.respawn .timer-big { color:#64b5f6; }
+  .card.ready   .timer-big { color:#ce93d8; }
+  .card.picked  .timer-big { color:#808080; }
+
+  .card-bottom { display:flex; justify-content:space-between; align-items:flex-end;
+                 border-top:1px solid rgba(255,255,255,.06); padding-top:12px; }
+  .sub-txt { font-size:11px; color:var(--mut); }
+
+  .section { margin:28px 0 14px; font-size:13px; font-weight:700; color:var(--amber);
+             text-transform:uppercase; letter-spacing:1.4px;
+             border-bottom:1px solid rgba(255,183,77,.2); padding-bottom:8px; }
+  .empty { color:#4a5a4b; font-size:13px; padding:24px; text-align:center;
+           background:rgba(0,0,0,.25); border-radius:10px; font-style:italic;
+           border:1px dashed var(--edge); }
+
+  .target-card {
+    background:linear-gradient(180deg,rgba(60,120,40,.25),rgba(30,70,20,.1));
+    border:1px solid #8bc34a; border-radius:12px; padding:16px 18px;
+    display:flex; flex-direction:column; gap:6px; margin-bottom:14px;
+  }
+  .target-card .name { font-size:15px; }
+  .target-card .meta { font-size:12px; }
+
+  .queue-wrap { margin-bottom:18px; }
+  .queue-label { font-size:11px; color:var(--mut); margin-bottom:8px;
+                 text-transform:uppercase; letter-spacing:1px; font-weight:600; }
+  .chip { display:inline-block; padding:5px 12px; border-radius:999px;
           background:rgba(124,179,66,.12); border:1px solid var(--edge2);
-          font-size:11px; margin:2px 3px 2px 0; }
+          font-size:12px; margin:0 6px 6px 0; }
   .chip b { color:var(--lime); }
-  footer { margin-top:32px; font-size:10px; color:#4a5a4b; text-align:center; }
+
+  footer { margin-top:40px; font-size:10px; color:#4a5a4b; text-align:center; }
 </style>
 </head>
 <body>
 
-<h1>🍄 Grzyby — live</h1>
+<h1>Grzyby — live</h1>
 <div id="bar">
   <span id="dot" class="live off"></span>
   <span id="status">łączę z Firebase…</span>
 </div>
 
 <div id="target"></div>
-<div id="queue"></div>
+<div id="queue" class="queue-wrap"></div>
 
-<div class="section">⏱️ Timery grzybów</div>
+<div class="section">Timery grzybów</div>
 <div id="grid" class="grid"></div>
-
-<div class="section">📊 Statystyki</div>
-<div id="stats"></div>
 
 <footer id="foot"></footer>
 
@@ -128,47 +170,64 @@ function renderTimers() {
     });
 
     if (!list.length) {
-        grid.innerHTML = '<div class="empty">Brak aktywnych timerów — bot nie wykrył jeszcze żadnego grzyba</div>';
+        grid.innerHTML = '<div class="empty" style="grid-column:1/-1;">Brak aktywnych timerów — bot nie wykrył jeszcze żadnego grzyba</div>';
         return;
     }
 
     grid.innerHTML = list.map(t => {
         const short = (t.type || '').replace(/^Ogromn\S+\s/, '');
-        const lvl = t.level ? ` <span style="color:#ffb74d;">[${t.level}]</span>` : '';
-        let cls, mainTxt, subTxt, cat;
+        const lvlTag = t.level ? `<span class="lvl-tag">${t.level}</span>` : '';
+        let cls, mainTxt, subTxt, cat, extraTxt = '';
 
         if (t.state === 'seen') {
             const left = Math.max(0, (t.expiresAt || now) - now);
             mainTxt = fmt(left);
-            if (t.picked) { cls='picked'; cat='ZEBRANY'; subTxt='timer leci dalej'; }
-            else if (t.source === 'chat') { cls='rumor'; cat='POGŁOSKA'; subTxt='czekam na detektor'; }
-            else if (left < 60_000) { cls='warn'; cat='ZARAZ ZNIKNIE'; subTxt=`~${fmtClock(t.expiresAt)}`; }
-            else { cls='alive'; cat='AKTYWNY'; subTxt=`~${fmtClock(t.expiresAt)}`; }
+            if (t.picked) {
+                cls='picked'; cat='ZEBRANY'; subTxt='timer leci dalej';
+            } else if (t.source === 'chat') {
+                cls='rumor'; cat='POGŁOSKA'; subTxt='czekam na detektor';
+            } else if (left < 60_000) {
+                cls='warn'; cat='ZARAZ ZNIKNIE'; subTxt='zniknie o';
+                extraTxt = fmtClock(t.expiresAt);
+            } else {
+                cls='alive'; cat='AKTYWNY'; subTxt='zniknie o';
+                extraTxt = fmtClock(t.expiresAt);
+            }
         } else {
             const toMin = t.respawnMin ? t.respawnMin - now : 0;
             const toMax = t.respawnMax ? t.respawnMax - now : 0;
             if (toMin > 0) {
                 cls='respawn'; cat='RESPAWN'; mainTxt=fmt(toMin);
-                subTxt=`okno ${fmtClock(t.respawnMin)} – ${fmtClock(t.respawnMax)}`;
+                subTxt='okno';
+                extraTxt = `${fmtClock(t.respawnMin)} – ${fmtClock(t.respawnMax)}`;
             } else if (toMax > 0) {
                 cls='ready'; cat='MOŻE SIĘ POJAWIĆ'; mainTxt='SPRAWDŹ';
-                subTxt=`do ${fmtClock(t.respawnMax)}`;
+                subTxt='do';
+                extraTxt = fmtClock(t.respawnMax);
             } else {
                 cls='picked'; cat='PO OKNIE'; mainTxt='—'; subTxt='sprawdź mapę';
             }
         }
-        const loc = t.locMap ? `📍 ${esc(t.locMap)} (${t.locX},${t.locY})` : '📍 —';
-        const img = t.img ? `<img src="${esc(t.img)}" alt="">` : '<div style="width:56px;"></div>';
+
+        const loc = t.locMap ? `${esc(t.locMap)} (${t.locX}, ${t.locY})` : '—';
+        const img = t.img ? `<img src="${esc(t.img)}" alt="">` : '<div style="width:72px;"></div>';
 
         return `<div class="card ${cls}">
-            ${img}
-            <div class="body">
-                <div class="name">${esc(short)}${lvl}</div>
-                <div class="meta"><span class="cat">${cat}</span></div>
-                <div class="meta">${loc}</div>
-                <div class="meta">${subTxt}</div>
+            <div class="card-top">
+                ${img}
+                <div class="name">${esc(short)}${lvlTag}</div>
             </div>
-            <div class="timer">${mainTxt}</div>
+            <div class="card-mid">
+                <div class="cat">${cat}</div>
+                <div class="meta">Lokalizacja: <b>${loc}</b></div>
+            </div>
+            <div class="card-bottom">
+                <div>
+                    <div class="sub-txt">${subTxt}</div>
+                    <div class="sub-txt" style="color:#c5e1a5;font-size:13px;font-weight:600;">${extraTxt || '—'}</div>
+                </div>
+                <div class="timer-big">${mainTxt}</div>
+            </div>
         </div>`;
     }).join('');
 }
@@ -179,35 +238,22 @@ function renderTargetAndQueue() {
 
     if (state?.target) {
         const t = state.target;
-        const icons = { approach:'🚶', dialog:'💬', farming:'🌿', skarbiec:'💰' };
+        const phases = { approach:'Podejście', dialog:'Rozmowa', farming:'Zbiory', skarbiec:'Skarbiec' };
         tEl.innerHTML = `<div class="target-card">
-            <div class="icon">${icons[t.phase] || '🎯'}</div>
-            <div style="flex:1;min-width:0;">
-                <div class="name">${esc(t.name)}</div>
-                <div class="meta">📍 ${esc(t.map)} (${t.x},${t.y}) · faza: <b style="color:var(--lime);">${esc(t.phase)}</b></div>
-            </div>
+            <div class="cat" style="color:#aed581;">Aktualny cel</div>
+            <div class="name">${esc(t.name)}</div>
+            <div class="meta">Lokalizacja: <b>${esc(t.map)} (${t.x}, ${t.y})</b> &nbsp;·&nbsp; Faza: <b style="color:#aed581;">${phases[t.phase] || t.phase}</b></div>
         </div>`;
     } else {
         tEl.innerHTML = '';
     }
 
     if (state?.queue?.length) {
-        qEl.innerHTML = `<div style="font-size:11px;color:var(--mut);margin-bottom:6px;">
-            ⏳ W kolejce (${state.queue.length}):</div>
+        qEl.innerHTML = `<div class="queue-label">W kolejce (${state.queue.length})</div>
             ${state.queue.map(q => `<span class="chip"><b>${esc((q.name||'').replace(/^Ogromn\S+\s/,''))}</b> @ ${esc(q.map)}</span>`).join('')}`;
     } else {
         qEl.innerHTML = '';
     }
-}
-
-function renderStats() {
-    const el = document.getElementById('stats');
-    const stats = state?.stats || {};
-    const entries = Object.entries(stats).filter(([,v]) => v > 0);
-    if (!entries.length) { el.innerHTML = '<div class="empty">Brak statystyk</div>'; return; }
-    el.innerHTML = entries.map(([name, count]) =>
-        `<span class="chip">${esc(name.replace(/^Ogromn\S+\s/,''))}: <b>${count}</b></span>`
-    ).join('');
 }
 
 function renderBar() {
@@ -219,10 +265,11 @@ function renderBar() {
     if (!state) { st.textContent = 'czekam na dane z userscriptu…'; return; }
     const ago = Math.round((now - lastUpdate) / 1000);
     st.innerHTML =
-        `<b>${esc(state.nick || '?')}</b> · ${esc(state.map || '?')} (${state.x},${state.y}) · ` +
+        `<b style="color:#c5e1a5;">${esc(state.nick || '?')}</b> · ` +
+        `${esc(state.map || '?')} (${state.x}, ${state.y}) · ` +
         `lvl ${state.level || '?'} · ` +
-        `<span class="badge">${state.grzEnabled ? '🍄 ON' : '⛔ OFF'}</span> ` +
-        `<span class="badge">${state.isRunning ? '▶ biega' : '⏸ stop'}</span> ` +
+        `<span class="badge">${state.grzEnabled ? 'ON' : 'OFF'}</span> ` +
+        `<span class="badge">${state.isRunning ? 'biega' : 'stop'}</span> ` +
         `· update ${ago}s temu`;
 }
 
@@ -230,9 +277,8 @@ function render() {
     renderBar();
     renderTargetAndQueue();
     renderTimers();
-    renderStats();
     document.getElementById('foot').textContent =
-        'Margonem Radar · dashboard live · ' + new Date().toLocaleString();
+        'Margonem Radar · ' + new Date().toLocaleString();
 }
 
 const stateRef = ref(db, `mushrooms/${TOKEN}`);
@@ -244,7 +290,7 @@ onValue(stateRef, (snap) => {
     render();
 }, (err) => {
     console.error('FB err:', err);
-    document.getElementById('status').textContent = '❌ Błąd Firebase: ' + err.message;
+    document.getElementById('status').textContent = 'Błąd Firebase: ' + err.message;
 });
 
 setInterval(render, 1000);
