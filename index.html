@@ -123,7 +123,7 @@
     box-shadow:0 4px 22px rgba(76,175,80,.10), inset 0 1px 0 rgba(255,255,255,.03);
     margin-bottom:22px;
     position:relative; overflow:hidden;
-    animation:slideIn .4s ease;
+    
   }
   .target::before {
     content:''; position:absolute; left:0; top:0; bottom:0; width:3px;
@@ -188,7 +188,7 @@
   .queue .chip .arrow { color:var(--mut); font-size:10px; }
 
   /* ═══ Section ═══ */
-  .section { margin-bottom:38px; animation:slideIn .4s ease; }
+    .section { margin-bottom:38px; }
   .section-head {
     display:flex; align-items:center; gap:14px; margin-bottom:20px;
     padding:0 4px;
@@ -482,7 +482,7 @@ function esc(s) {
         ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
 }
 
-/* ═══ Oblicza wartości karty — używane przy pełnym renderze i ticku ═══ */
+/* ═══ Oblicz wartości karty ═══ */
 function computeCard(t, now) {
     const short = (t.type || '').replace(/^Ogromn\S+\s/, '');
     const lvlTag = t.level ? `${t.level} LVL` : '';
@@ -495,15 +495,10 @@ function computeCard(t, now) {
         mainTxt = fmt(left);
         subTxt = `znika o ${fmtClock(t.expiresAt)}`;
 
-        if (t.picked) {
-            cls='picked'; cat='Zebrany'; hintTxt='timer leci';
-        } else if (t.source === 'chat') {
-            cls='rumor'; cat='Pogłoska'; hintTxt='czekam na detektor';
-        } else if (left < 60_000) {
-            cls='warn'; cat='Zaraz zniknie'; hintTxt='pozostało';
-        } else {
-            cls='alive'; cat='Aktywny'; hintTxt='pozostało';
-        }
+        if (t.picked) { cls='picked'; cat='Zebrany'; hintTxt='timer leci'; }
+        else if (t.source === 'chat') { cls='rumor'; cat='Pogłoska'; hintTxt='czekam na detektor'; }
+        else if (left < 60_000) { cls='warn'; cat='Zaraz zniknie'; hintTxt='pozostało'; }
+        else { cls='alive'; cat='Aktywny'; hintTxt='pozostało'; }
     } else {
         const toMin = t.respawnMin ? t.respawnMin - now : 0;
         const toMax = t.respawnMax ? t.respawnMax - now : 0;
@@ -523,21 +518,53 @@ function computeCard(t, now) {
             subTxt = `do ${fmtClock(t.respawnMax)}`;
         } else {
             cls='picked'; cat='Po oknie'; hintTxt='sprawdź mapę';
-            mainTxt = '—';
-            subTxt = '—';
+            mainTxt = '—'; subTxt = '—';
         }
     }
     return { cls, mainTxt, hintTxt, subTxt, cat, progress, lvlTag, short };
 }
 
-function buildCard(t, now) {
+/* ═══ SKELETON — budowany RAZ, nigdy nie kasowany ═══ */
+let skeletonBuilt = false;
+const cardsByKey = new Map();   // key -> HTMLElement
+
+function buildSkeleton() {
+    if (skeletonBuilt) return;
+    document.getElementById('sections').innerHTML = `
+        <section class="section" data-level="100">
+            <div class="section-head">
+                <div class="level-badge"><span class="num">100</span><span class="txt">LVL</span></div>
+                <span class="count-pill" data-count="100">0 grzybów</span>
+                <span class="line"></span>
+            </div>
+            <div class="cards" data-cards="100"></div>
+            <div class="empty" data-empty="100" style="display:none">Brak aktywnych timerów dla tego poziomu</div>
+        </section>
+        <section class="section" data-level="200">
+            <div class="section-head">
+                <div class="level-badge"><span class="num">200</span><span class="txt">LVL</span></div>
+                <span class="count-pill" data-count="200">0 grzybów</span>
+                <span class="line"></span>
+            </div>
+            <div class="cards" data-cards="200"></div>
+            <div class="empty" data-empty="200" style="display:none">Brak aktywnych timerów dla tego poziomu</div>
+        </section>
+    `;
+    skeletonBuilt = true;
+}
+
+/* ═══ Tworzy nowy element karty (raz, potem aktualizowany) ═══ */
+function createCardEl(t, now) {
     const c = computeCard(t, now);
+    const el = document.createElement('div');
+    el.dataset.key = t.key;
+    el.className = 'card ' + c.cls;
     const loc = t.locMap ? `<b>${esc(t.locMap)}</b><br>(${t.locX}, ${t.locY})` : '—';
     const img = t.img ? `<img src="${esc(t.img)}" alt="">` : '';
-    return `<div class="card ${c.cls}" data-key="${esc(t.key)}">
+    el.innerHTML = `
         <div class="img-wrap">${img}</div>
         <div class="name">${esc(c.short)}</div>
-        ${c.lvlTag ? `<div class="lvl-tag">${c.lvlTag}</div>` : ''}
+        <div class="lvl-tag" style="${c.lvlTag ? '' : 'display:none'}">${c.lvlTag}</div>
         <div class="status-pill"><span class="pip"></span>${c.cat}</div>
         <div class="loc">${loc}</div>
         <div class="timer-block">
@@ -546,11 +573,79 @@ function buildCard(t, now) {
             <div class="timer-sub">${c.subTxt}</div>
         </div>
         <div class="bar-track"><div class="bar-fill" style="width:${c.progress}%"></div></div>
-    </div>`;
+    `;
+    return el;
 }
 
-/* ═══ Pełny render sekcji — wywoływany TYLKO gdy zmienią się dane z Firebase ═══ */
-function renderSections() {
+/* ═══ Aktualizuje istniejącą kartę — bez kasowania DOM ═══ */
+function updateCardInPlace(el, t, now) {
+    const c = computeCard(t, now);
+    const newCls = 'card ' + c.cls;
+    if (el.className !== newCls) el.className = newCls;
+
+    const lvlEl = el.querySelector('.lvl-tag');
+    if (lvlEl) {
+        const cur = lvlEl.textContent;
+        if (cur !== c.lvlTag) lvlEl.textContent = c.lvlTag;
+        const wantDisp = c.lvlTag ? '' : 'none';
+        if (lvlEl.style.display !== wantDisp) lvlEl.style.display = wantDisp;
+    }
+    const pill = el.querySelector('.status-pill');
+    if (pill) {
+        const expected = `<span class="pip"></span>${c.cat}`;
+        if (pill.innerHTML !== expected) pill.innerHTML = expected;
+    }
+    const tb = el.querySelector('.timer-big');
+    if (tb && tb.textContent !== c.mainTxt) tb.textContent = c.mainTxt;
+    const th = el.querySelector('.timer-hint');
+    if (th && th.textContent !== c.hintTxt) th.textContent = c.hintTxt;
+    const ts = el.querySelector('.timer-sub');
+    if (ts && ts.textContent !== c.subTxt) ts.textContent = c.subTxt;
+    const bar = el.querySelector('.bar-fill');
+    if (bar) {
+        const w = c.progress + '%';
+        if (bar.style.width !== w) bar.style.width = w;
+    }
+}
+
+/* ═══ Reconcile sekcji — wstawia/usuwa/przestawia karty w kolejności ═══ */
+function applySection(level, list, now) {
+    const container = document.querySelector(`.cards[data-cards="${level}"]`);
+    if (!container) return;
+
+    let lastPlaced = null;
+    for (const t of list) {
+        let el = cardsByKey.get(t.key);
+        if (!el) {
+            el = createCardEl(t, now);
+            cardsByKey.set(t.key, el);
+        } else {
+            updateCardInPlace(el, t, now);
+        }
+        const expectedNext = lastPlaced ? lastPlaced.nextSibling : container.firstChild;
+        if (el !== expectedNext) {
+            container.insertBefore(el, expectedNext);
+        }
+        lastPlaced = el;
+    }
+}
+
+function setCount(level, n) {
+    const el = document.querySelector(`.count-pill[data-count="${level}"]`);
+    if (!el) return;
+    const word = n === 1 ? 'grzyb' : (n >= 2 && n <= 4 ? 'grzyby' : 'grzybów');
+    const expected = `${n} ${word}`;
+    if (el.textContent !== expected) el.textContent = expected;
+}
+function setEmpty(level, show) {
+    const empty = document.querySelector(`[data-empty="${level}"]`);
+    if (!empty) return;
+    const wantDisp = show ? '' : 'none';
+    if (empty.style.display !== wantDisp) empty.style.display = wantDisp;
+}
+
+function reconcileCards() {
+    buildSkeleton();
     const now = Date.now();
     const timers = state?.timers || [];
     const lvl100 = timers.filter(t => (t.level || 0) < 150);
@@ -561,168 +656,163 @@ function renderSections() {
         const lb = b.state === 'seen' ? (b.expiresAt || now) - now : (b.respawnMin || now) - now;
         return la - lb;
     };
+    const s100 = lvl100.slice().sort(sortFn);
+    const s200 = lvl200.slice().sort(sortFn);
 
-    const makeSection = (level, list) => {
-        const cardsHtml = list.length
-            ? list.slice().sort(sortFn).map(t => buildCard(t, now)).join('')
-            : `<div class="empty">Brak aktywnych timerów dla tego poziomu</div>`;
-        const word = list.length === 1 ? 'grzyb' : (list.length >= 2 && list.length <= 4 ? 'grzyby' : 'grzybów');
-        return `<section class="section">
-            <div class="section-head">
-                <div class="level-badge">
-                    <span class="num">${level}</span>
-                    <span class="txt">LVL</span>
-                </div>
-                <span class="count-pill" data-count="${level}">${list.length} ${word}</span>
-                <span class="line"></span>
-            </div>
-            <div class="cards">${cardsHtml}</div>
-        </section>`;
-    };
+    // Usuń karty, których już nie ma
+    const wanted = new Set([...s100, ...s200].map(t => t.key));
+    for (const [key, el] of cardsByKey) {
+        if (!wanted.has(key)) {
+            el.remove();
+            cardsByKey.delete(key);
+        }
+    }
 
-    document.getElementById('sections').innerHTML =
-        makeSection(100, lvl100) + makeSection(200, lvl200);
+    applySection(100, s100, now);
+    applySection(200, s200, now);
+
+    setCount(100, s100.length);
+    setCount(200, s200.length);
+    setEmpty(100, s100.length === 0);
+    setEmpty(200, s200.length === 0);
 }
+
+/* ═══ Target + Queue — renderowane tylko gdy zmieni się zawartość ═══ */
+let lastTargetJson = '';
+let lastQueueJson = '';
 
 function renderTargetAndQueue() {
     const tEl = document.getElementById('target');
     const qEl = document.getElementById('queue');
 
-    if (state?.target) {
-        const t = state.target;
-        const phases = { approach:'Podejście', dialog:'Rozmowa', farming:'Zbiory', skarbiec:'Skarbiec' };
-        const icons = { approach:'🚶', dialog:'💬', farming:'🌿', skarbiec:'💰' };
-        tEl.innerHTML = `<div class="target">
-            <div class="icon-badge">${icons[t.phase] || '🎯'}</div>
-            <div class="body">
-                <div class="label">Aktualny cel</div>
-                <div class="name">${esc(t.name)}</div>
-                <div class="loc">
-                    <span><b>${esc(t.map)}</b> (${t.x}, ${t.y})</span>
-                    <span class="phase-pill">${phases[t.phase] || t.phase}</span>
+    const tJson = JSON.stringify(state?.target || null);
+    if (tJson !== lastTargetJson) {
+        lastTargetJson = tJson;
+        if (state?.target) {
+            const t = state.target;
+            const phases = { approach:'Podejście', dialog:'Rozmowa', farming:'Zbiory', skarbiec:'Skarbiec' };
+            const icons = { approach:'🚶', dialog:'💬', farming:'🌿', skarbiec:'💰' };
+            tEl.innerHTML = `<div class="target">
+                <div class="icon-badge">${icons[t.phase] || '🎯'}</div>
+                <div class="body">
+                    <div class="label">Aktualny cel</div>
+                    <div class="name">${esc(t.name)}</div>
+                    <div class="loc">
+                        <span><b>${esc(t.map)}</b> (${t.x}, ${t.y})</span>
+                        <span class="phase-pill">${phases[t.phase] || t.phase}</span>
+                    </div>
                 </div>
-            </div>
-        </div>`;
-    } else {
-        tEl.innerHTML = '';
+            </div>`;
+        } else {
+            tEl.innerHTML = '';
+        }
     }
 
-    if (state?.queue?.length) {
-        qEl.innerHTML = `<div class="queue">
-            <span class="lbl">W kolejce</span>
-            ${state.queue.map(q => `<span class="chip"><b>${esc((q.name||'').replace(/^Ogromn\S+\s/,''))}</b><span class="arrow">@</span>${esc(q.map)}</span>`).join('')}
-        </div>`;
-    } else {
-        qEl.innerHTML = '';
+    const qJson = JSON.stringify(state?.queue || []);
+    if (qJson !== lastQueueJson) {
+        lastQueueJson = qJson;
+        if (state?.queue?.length) {
+            qEl.innerHTML = `<div class="queue">
+                <span class="lbl">W kolejce</span>
+                ${state.queue.map(q => `<span class="chip"><b>${esc((q.name||'').replace(/^Ogromn\S+\s/,''))}</b><span class="arrow">@</span>${esc(q.map)}</span>`).join('')}
+            </div>`;
+        } else {
+            qEl.innerHTML = '';
+        }
     }
 }
 
-function renderHeaderFull() {
+/* ═══ Header — pełny render tylko raz, potem tylko aktualizacja wartości ═══ */
+let headerBuilt = false;
+function renderHeader() {
+    const conn = document.getElementById('conn');
+    if (!state) {
+        if (!headerBuilt) { conn.innerHTML = '<span>Łączę z Firebase…</span>'; headerBuilt = true; }
+        return;
+    }
     const now = Date.now();
     const stale = now - lastUpdate > STALE_MS;
     document.getElementById('dot').className = 'dot-live' + (stale ? ' off' : '');
 
-    const conn = document.getElementById('conn');
-    if (!state) {
-        conn.innerHTML = '<span>Łączę z Firebase…</span>';
+    if (!headerBuilt) {
+        const ago = Math.round((now - lastUpdate) / 1000);
+        const agoTxt = ago < 3 ? 'teraz' : `${ago}s temu`;
+        conn.innerHTML = `
+            <b data-h="nick">${esc(state.nick || '?')}</b>
+            <span class="sep">·</span>
+            <span data-h="loc">${esc(state.map || '?')} (${state.x}, ${state.y})</span>
+            <span class="sep">·</span>
+            <span data-h="lvl">lvl ${state.level || '?'}</span>
+            <span class="badge" data-h="enabled">${state.grzEnabled ? 'ON' : 'OFF'}</span>
+            <span class="badge" data-h="running">${state.isRunning ? 'biega' : 'stop'}</span>
+            <span class="sep">·</span>
+            <span class="ago-txt" style="opacity:.7;">aktualizacja ${agoTxt}</span>
+        `;
+        headerBuilt = true;
         return;
     }
-    const ago = Math.round((now - lastUpdate) / 1000);
-    const agoTxt = ago < 3 ? 'teraz' : `${ago}s temu`;
-    conn.innerHTML = `
-        <b>${esc(state.nick || '?')}</b>
-        <span class="sep">·</span>
-        <span>${esc(state.map || '?')} (${state.x}, ${state.y})</span>
-        <span class="sep">·</span>
-        <span>lvl ${state.level || '?'}</span>
-        <span class="badge ${state.grzEnabled ? 'on' : ''}">${state.grzEnabled ? 'ON' : 'OFF'}</span>
-        <span class="badge ${state.isRunning ? 'run' : 'idle'}">${state.isRunning ? 'biega' : 'stop'}</span>
-        <span class="sep">·</span>
-        <span class="ago-txt" style="opacity:.7;">aktualizacja ${agoTxt}</span>
-    `;
+
+    // aktualizuj tylko różnice
+    const set = (sel, val) => {
+        const el = conn.querySelector(`[data-h="${sel}"]`);
+        if (el && el.textContent !== val) el.textContent = val;
+    };
+    set('nick', state.nick || '?');
+    set('loc', `${state.map || '?'} (${state.x}, ${state.y})`);
+    set('lvl', `lvl ${state.level || '?'}`);
+    const enabledEl = conn.querySelector('[data-h="enabled"]');
+    const enabledTxt = state.grzEnabled ? 'ON' : 'OFF';
+    const enabledCls = 'badge' + (state.grzEnabled ? ' on' : '');
+    if (enabledEl) {
+        if (enabledEl.textContent !== enabledTxt) enabledEl.textContent = enabledTxt;
+        if (enabledEl.className !== enabledCls) enabledEl.className = enabledCls;
+    }
+    const runningEl = conn.querySelector('[data-h="running"]');
+    const runningTxt = state.isRunning ? 'biega' : 'stop';
+    const runningCls = 'badge ' + (state.isRunning ? 'run' : 'idle');
+    if (runningEl) {
+        if (runningEl.textContent !== runningTxt) runningEl.textContent = runningTxt;
+        if (runningEl.className !== runningCls) runningEl.className = runningCls;
+    }
 }
 
-/* ═══ Pełny render — wywoływany przy każdej zmianie z Firebase ═══ */
-function fullRender() {
-    renderHeaderFull();
-    renderTargetAndQueue();
-    renderSections();
-    document.getElementById('foot').textContent =
-        'Margonem Radar · ' + new Date().toLocaleString();
-}
-
-/* ═══ Tick — co sekundę aktualizuje TYLKO dynamiczne wartości (bez przebudowy DOM) ═══ */
+/* ═══ Co sekundę — lekkie odświeżenie tylko wartości liczbowych ═══ */
 function tick() {
     if (!state) return;
     const now = Date.now();
 
-    // 1) Nagłówek — tylko tekst "ago" i kropka
     const stale = now - lastUpdate > STALE_MS;
     const dot = document.getElementById('dot');
     const dotCls = 'dot-live' + (stale ? ' off' : '');
     if (dot.className !== dotCls) dot.className = dotCls;
 
     const agoEl = document.querySelector('.ago-txt');
-    if (agoEl && state) {
+    if (agoEl) {
         const ago = Math.round((now - lastUpdate) / 1000);
         const agoTxt = ago < 3 ? 'teraz' : `${ago}s temu`;
         const expected = 'aktualizacja ' + agoTxt;
         if (agoEl.textContent !== expected) agoEl.textContent = expected;
     }
 
-    // 2) Karty — aktualizuj tylko liczby, klasy i szerokość progress bara
-    const map = new Map((state.timers || []).map(t => [t.key, t]));
-    document.querySelectorAll('.card[data-key]').forEach(card => {
-        const t = map.get(card.dataset.key);
-        if (!t) return;
-        const c = computeCard(t, now);
-
-        // klasa (alive/warn/respawn/...) — tylko gdy naprawdę inna
-        const newCls = 'card ' + c.cls;
-        if (card.className !== newCls) card.className = newCls;
-
-        // timer-główny
-        const timerBig = card.querySelector('.timer-big');
-        if (timerBig && timerBig.textContent !== c.mainTxt) {
-            timerBig.textContent = c.mainTxt;
-        }
-
-        // podpis pod timerem (godzina / okno)
-        const timerSub = card.querySelector('.timer-sub');
-        if (timerSub && timerSub.textContent !== c.subTxt) {
-            timerSub.textContent = c.subTxt;
-        }
-
-        // hint nad timerem
-        const timerHint = card.querySelector('.timer-hint');
-        if (timerHint && timerHint.textContent !== c.hintTxt) {
-            timerHint.textContent = c.hintTxt;
-        }
-
-        // pigułka statusu (z kropką)
-        const pill = card.querySelector('.status-pill');
-        if (pill) {
-            const expected = `<span class="pip"></span>${c.cat}`;
-            if (pill.innerHTML !== expected) pill.innerHTML = expected;
-        }
-
-        // progress bar
-        const bar = card.querySelector('.bar-fill');
-        if (bar) {
-            const w = c.progress + '%';
-            if (bar.style.width !== w) bar.style.width = w;
-        }
-    });
+    // Karty — aktualizuj tylko wartości
+    for (const t of (state.timers || [])) {
+        const el = cardsByKey.get(t.key);
+        if (el) updateCardInPlace(el, t, now);
+    }
 }
 
-/* ═══ Firebase — pełny render tylko gdy zmienią się dane ═══ */
+/* ═══ Firebase — reconcile tylko gdy przyszły nowe dane ═══ */
 const stateRef = ref(db, `mushrooms/${TOKEN}`);
 onValue(stateRef, (snap) => {
     const val = snap.val();
-    if (!val) { state = null; fullRender(); return; }
+    if (!val) { state = null; renderHeader(); return; }
     state = val;
     lastUpdate = Date.now();
-    fullRender();
+    renderHeader();
+    renderTargetAndQueue();
+    reconcileCards();
+    document.getElementById('foot').textContent =
+        'Margonem Radar · ' + new Date().toLocaleString();
 }, (err) => {
     console.error('FB err:', err);
     document.getElementById('conn').innerHTML = 'Błąd Firebase: ' + err.message;
