@@ -35,7 +35,6 @@
     position:relative;
   }
 
-  /* ═══ Animated background ═══ */
   body::before {
     content:''; position:fixed; inset:0; z-index:-2;
     background:
@@ -51,9 +50,9 @@
       linear-gradient(90deg, rgba(124,179,66,.025) 1px, transparent 1px);
     background-size:50px 50px;
     mask-image:radial-gradient(ellipse 100% 80% at 50% 50%, black 30%, transparent 90%);
+    -webkit-mask-image:radial-gradient(ellipse 100% 80% at 50% 50%, black 30%, transparent 90%);
   }
 
-  /* ═══ Layout ═══ */
   .wrap { max-width:1500px; margin:0 auto; padding:32px 24px 80px; }
 
   /* ═══ Header ═══ */
@@ -91,9 +90,7 @@
     animation:pulse 1.6s ease-in-out infinite;
     -webkit-text-fill-color:initial; flex-shrink:0;
   }
-  .title .dot-live.off {
-    background:#666; box-shadow:none; animation:none;
-  }
+  .title .dot-live.off { background:#666; box-shadow:none; animation:none; }
   @keyframes pulse { 0%,100%{opacity:1; transform:scale(1);} 50%{opacity:.4; transform:scale(.85);} }
 
   .conn {
@@ -108,6 +105,7 @@
     letter-spacing:.4px; text-transform:uppercase;
     background:rgba(0,0,0,.4); border:1px solid var(--edge);
     color:var(--mut);
+    transition:color .3s, border-color .3s, background .3s;
   }
   .badge.on { color:var(--lime); border-color:rgba(174,213,129,.35); background:rgba(124,179,66,.10); }
   .badge.run { color:var(--amber); border-color:rgba(255,183,77,.35); background:rgba(255,183,77,.10); }
@@ -123,7 +121,6 @@
     box-shadow:0 4px 22px rgba(76,175,80,.10), inset 0 1px 0 rgba(255,255,255,.03);
     margin-bottom:22px;
     position:relative; overflow:hidden;
-    
   }
   .target::before {
     content:''; position:absolute; left:0; top:0; bottom:0; width:3px;
@@ -158,11 +155,6 @@
     border:1px solid rgba(174,213,129,.30);
   }
 
-  @keyframes slideIn {
-    from { opacity:0; transform:translateY(-8px); }
-    to   { opacity:1; transform:translateY(0); }
-  }
-
   /* ═══ Queue ═══ */
   .queue {
     display:flex; align-items:center; gap:8px; flex-wrap:wrap;
@@ -188,7 +180,7 @@
   .queue .chip .arrow { color:var(--mut); font-size:10px; }
 
   /* ═══ Section ═══ */
-    .section { margin-bottom:38px; }
+  .section { margin-bottom:38px; }
   .section-head {
     display:flex; align-items:center; gap:14px; margin-bottom:20px;
     padding:0 4px;
@@ -219,7 +211,7 @@
     background:linear-gradient(90deg,rgba(255,183,77,.35) 0%, rgba(255,183,77,.05) 60%, transparent 100%);
   }
 
-  /* ═══ Cards — wyśrodkowane flex ═══ */
+  /* ═══ Cards — wyśrodkowane ═══ */
   .cards {
     display:flex;
     flex-wrap:wrap;
@@ -238,7 +230,7 @@
     backdrop-filter:blur(10px);
     -webkit-backdrop-filter:blur(10px);
     display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px;
-    transition:transform .22s cubic-bezier(.34,1.56,.64,1), box-shadow .3s, border-color .3s;
+    transition:transform .22s cubic-bezier(.34,1.56,.64,1), box-shadow .3s, border-color .3s, opacity .3s;
     box-shadow:
       0 4px 20px rgba(0,0,0,.35),
       inset 0 1px 0 rgba(255,255,255,.04);
@@ -255,8 +247,45 @@
   .card.warn    { border-color:rgba(239,83,80,.65); box-shadow:0 0 28px rgba(239,83,80,.22), 0 4px 20px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04); animation:urgent 2s ease-in-out infinite; }
   .card.respawn { border-color:rgba(66,165,245,.55); box-shadow:0 0 24px rgba(66,165,245,.14), 0 4px 20px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04); }
   .card.ready   { border-color:rgba(206,147,216,.55); box-shadow:0 0 24px rgba(206,147,216,.14), 0 4px 20px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04); }
-  .card.picked  { opacity:.55; }
   .card.rumor   { border-color:rgba(66,165,245,.4); opacity:.85; }
+
+  /* ═══ ZEBRANY — wyraźne wyróżnienie ═══ */
+  .card.picked {
+    opacity:.72;
+    border-color:rgba(120,144,156,.6);
+    background:
+      repeating-linear-gradient(
+        45deg,
+        rgba(84,110,122,.06) 0px,
+        rgba(84,110,122,.06) 12px,
+        transparent 12px,
+        transparent 24px
+      ),
+      linear-gradient(180deg,var(--card),rgba(8,17,10,.7));
+    box-shadow:0 4px 20px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.03);
+    animation:none;
+  }
+  .card.picked:hover {
+    opacity:.92;
+    transform:translateY(-4px);
+  }
+  .card.picked::after {
+    content:'✓';
+    position:absolute; top:12px; right:12px;
+    width:32px; height:32px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:18px; font-weight:900; color:#fff;
+    background:linear-gradient(135deg,#66bb6a,#2e7d32);
+    border:2px solid rgba(200,230,201,.85);
+    box-shadow:0 0 14px rgba(102,187,106,.7), inset 0 1px 0 rgba(255,255,255,.3);
+    animation:pickedPop .5s cubic-bezier(.34,1.56,.64,1);
+    z-index:5;
+  }
+  @keyframes pickedPop {
+    0% { transform:scale(0) rotate(-90deg); opacity:0; }
+    60% { transform:scale(1.15) rotate(10deg); opacity:1; }
+    100% { transform:scale(1) rotate(0); opacity:1; }
+  }
 
   @keyframes urgent {
     0%,100% { box-shadow:0 0 28px rgba(239,83,80,.22), 0 4px 20px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04); }
@@ -274,7 +303,7 @@
   .card.warn::before    { color:#ef5350; opacity:.9; }
   .card.respawn::before { color:#42a5f5; }
   .card.ready::before   { color:#ce93d8; }
-  .card.picked::before  { color:#546e7a; }
+  .card.picked::before  { color:#78909c; opacity:.7; }
 
   /* Mushroom img with halo */
   .img-wrap {
@@ -288,12 +317,14 @@
     border-radius:50%;
     background:radial-gradient(circle, currentColor 0%, transparent 70%);
     opacity:.18;
+    transition:opacity .3s, color .3s;
   }
   .card.alive   .img-wrap::before { color:#4caf50; }
   .card.warn    .img-wrap::before { color:#ef5350; opacity:.28; }
   .card.respawn .img-wrap::before { color:#42a5f5; }
   .card.ready   .img-wrap::before { color:#ce93d8; }
-  .card.picked  .img-wrap::before { color:#546e7a; opacity:.08; }
+  .card.picked  .img-wrap::before { color:#78909c; opacity:.14; }
+  .card.rumor   .img-wrap::before { color:#42a5f5; opacity:.16; }
 
   .img-wrap img {
     width:82px; height:82px; image-rendering:pixelated;
@@ -302,6 +333,7 @@
     transition:transform .3s;
   }
   .card:hover .img-wrap img { transform:scale(1.06); }
+  .card.picked .img-wrap img { filter:drop-shadow(0 6px 14px rgba(0,0,0,.6)) grayscale(.35); }
 
   .name {
     font-size:13.5px; font-weight:700; color:var(--txt);
@@ -337,7 +369,7 @@
   .card.warn    .status-pill { color:#ef5350; border-color:rgba(239,83,80,.5); background:rgba(239,83,80,.12); }
   .card.respawn .status-pill { color:#64b5f6; border-color:rgba(100,181,246,.4); background:rgba(66,165,245,.10); }
   .card.ready   .status-pill { color:#ce93d8; border-color:rgba(206,147,216,.45); background:rgba(206,147,216,.10); }
-  .card.picked  .status-pill { color:#607d8b; }
+  .card.picked  .status-pill { color:#a5c9a8; border-color:rgba(165,201,168,.5); background:rgba(120,144,156,.15); }
   .card.rumor   .status-pill { color:#64b5f6; border-color:rgba(100,181,246,.4); background:rgba(66,165,245,.10); }
 
   .loc {
@@ -347,6 +379,7 @@
     padding:0 4px;
   }
   .loc b { color:#c5e1a5; font-weight:600; }
+  .card.picked .loc b { color:#a5c9a8; }
 
   /* Timer */
   .timer-block {
@@ -369,7 +402,7 @@
   .card.warn    .timer-big { color:#ef5350; text-shadow:0 0 22px rgba(239,83,80,.5); }
   .card.respawn .timer-big { color:#64b5f6; text-shadow:0 0 20px rgba(66,165,245,.25); }
   .card.ready   .timer-big { color:#ce93d8; text-shadow:0 0 20px rgba(206,147,216,.3); }
-  .card.picked  .timer-big { color:#808080; text-shadow:none; }
+  .card.picked  .timer-big { color:#a5c9a8; text-shadow:0 0 12px rgba(165,201,168,.2); font-size:30px; }
 
   .timer-sub {
     font-size:10.5px; color:var(--mut); font-weight:600;
@@ -392,7 +425,7 @@
   .card.warn    .bar-fill { color:#ef5350; }
   .card.respawn .bar-fill { color:#42a5f5; }
   .card.ready   .bar-fill { color:#ce93d8; }
-  .card.picked  .bar-fill { color:#546e7a; }
+  .card.picked  .bar-fill { color:#66bb6a; opacity:.6; }
 
   /* ═══ Empty ═══ */
   .empty {
@@ -418,6 +451,8 @@
     .img-wrap { width:78px; height:78px; }
     .img-wrap img { width:66px; height:66px; }
     .timer-big { font-size:26px; }
+    .card.picked .timer-big { font-size:23px; }
+    .card.picked::after { width:26px; height:26px; font-size:15px; top:10px; right:10px; }
     .target { flex-direction:column; align-items:flex-start; gap:12px; padding:16px 18px; }
   }
   @media (max-width:380px) {
@@ -495,7 +530,7 @@ function computeCard(t, now) {
         mainTxt = fmt(left);
         subTxt = `znika o ${fmtClock(t.expiresAt)}`;
 
-        if (t.picked) { cls='picked'; cat='Zebrany'; hintTxt='timer leci'; }
+        if (t.picked) { cls='picked'; cat='Zebrany'; hintTxt='timer leci dalej'; }
         else if (t.source === 'chat') { cls='rumor'; cat='Pogłoska'; hintTxt='czekam na detektor'; }
         else if (left < 60_000) { cls='warn'; cat='Zaraz zniknie'; hintTxt='pozostało'; }
         else { cls='alive'; cat='Aktywny'; hintTxt='pozostało'; }
@@ -524,9 +559,9 @@ function computeCard(t, now) {
     return { cls, mainTxt, hintTxt, subTxt, cat, progress, lvlTag, short };
 }
 
-/* ═══ SKELETON — budowany RAZ, nigdy nie kasowany ═══ */
+/* ═══ Skeleton — budowany raz ═══ */
 let skeletonBuilt = false;
-const cardsByKey = new Map();   // key -> HTMLElement
+const cardsByKey = new Map();
 
 function buildSkeleton() {
     if (skeletonBuilt) return;
@@ -553,7 +588,7 @@ function buildSkeleton() {
     skeletonBuilt = true;
 }
 
-/* ═══ Tworzy nowy element karty (raz, potem aktualizowany) ═══ */
+/* ═══ Nowa karta ═══ */
 function createCardEl(t, now) {
     const c = computeCard(t, now);
     const el = document.createElement('div');
@@ -577,7 +612,7 @@ function createCardEl(t, now) {
     return el;
 }
 
-/* ═══ Aktualizuje istniejącą kartę — bez kasowania DOM ═══ */
+/* ═══ Update w miejscu ═══ */
 function updateCardInPlace(el, t, now) {
     const c = computeCard(t, now);
     const newCls = 'card ' + c.cls;
@@ -585,8 +620,7 @@ function updateCardInPlace(el, t, now) {
 
     const lvlEl = el.querySelector('.lvl-tag');
     if (lvlEl) {
-        const cur = lvlEl.textContent;
-        if (cur !== c.lvlTag) lvlEl.textContent = c.lvlTag;
+        if (lvlEl.textContent !== c.lvlTag) lvlEl.textContent = c.lvlTag;
         const wantDisp = c.lvlTag ? '' : 'none';
         if (lvlEl.style.display !== wantDisp) lvlEl.style.display = wantDisp;
     }
@@ -608,7 +642,7 @@ function updateCardInPlace(el, t, now) {
     }
 }
 
-/* ═══ Reconcile sekcji — wstawia/usuwa/przestawia karty w kolejności ═══ */
+/* ═══ Reconcile sekcji ═══ */
 function applySection(level, list, now) {
     const container = document.querySelector(`.cards[data-cards="${level}"]`);
     if (!container) return;
@@ -659,7 +693,6 @@ function reconcileCards() {
     const s100 = lvl100.slice().sort(sortFn);
     const s200 = lvl200.slice().sort(sortFn);
 
-    // Usuń karty, których już nie ma
     const wanted = new Set([...s100, ...s200].map(t => t.key));
     for (const [key, el] of cardsByKey) {
         if (!wanted.has(key)) {
@@ -677,7 +710,7 @@ function reconcileCards() {
     setEmpty(200, s200.length === 0);
 }
 
-/* ═══ Target + Queue — renderowane tylko gdy zmieni się zawartość ═══ */
+/* ═══ Target + Queue ═══ */
 let lastTargetJson = '';
 let lastQueueJson = '';
 
@@ -722,7 +755,7 @@ function renderTargetAndQueue() {
     }
 }
 
-/* ═══ Header — pełny render tylko raz, potem tylko aktualizacja wartości ═══ */
+/* ═══ Header ═══ */
 let headerBuilt = false;
 function renderHeader() {
     const conn = document.getElementById('conn');
@@ -752,7 +785,6 @@ function renderHeader() {
         return;
     }
 
-    // aktualizuj tylko różnice
     const set = (sel, val) => {
         const el = conn.querySelector(`[data-h="${sel}"]`);
         if (el && el.textContent !== val) el.textContent = val;
@@ -776,7 +808,7 @@ function renderHeader() {
     }
 }
 
-/* ═══ Co sekundę — lekkie odświeżenie tylko wartości liczbowych ═══ */
+/* ═══ Tick co 1s ═══ */
 function tick() {
     if (!state) return;
     const now = Date.now();
@@ -794,14 +826,13 @@ function tick() {
         if (agoEl.textContent !== expected) agoEl.textContent = expected;
     }
 
-    // Karty — aktualizuj tylko wartości
     for (const t of (state.timers || [])) {
         const el = cardsByKey.get(t.key);
         if (el) updateCardInPlace(el, t, now);
     }
 }
 
-/* ═══ Firebase — reconcile tylko gdy przyszły nowe dane ═══ */
+/* ═══ Firebase ═══ */
 const stateRef = ref(db, `mushrooms/${TOKEN}`);
 onValue(stateRef, (snap) => {
     const val = snap.val();
