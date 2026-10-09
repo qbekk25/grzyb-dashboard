@@ -211,7 +211,7 @@
     background:linear-gradient(90deg,rgba(255,183,77,.35) 0%, rgba(255,183,77,.05) 60%, transparent 100%);
   }
 
-  /* ═══ Cards — wyśrodkowane ═══ */
+  /* ═══ Cards ═══ */
   .cards {
     display:flex;
     flex-wrap:wrap;
@@ -249,21 +249,20 @@
   .card.ready   { border-color:rgba(206,147,216,.55); box-shadow:0 0 24px rgba(206,147,216,.14), 0 4px 20px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04); }
   .card.rumor   { border-color:rgba(66,165,245,.4); opacity:.85; }
 
-  /* ═══ ZEBRANY — wyraźne wyróżnienie ═══ */
+  /* ═══ ZEBRANY — spokojny, zielony ═══ */
   .card.picked {
     opacity:.72;
-    border-color:rgba(120,144,156,.6);
+    border-color:rgba(102,187,106,.55);
     background:
       repeating-linear-gradient(
         45deg,
-        rgba(84,110,122,.06) 0px,
-        rgba(84,110,122,.06) 12px,
+        rgba(102,187,106,.05) 0px,
+        rgba(102,187,106,.05) 12px,
         transparent 12px,
         transparent 24px
       ),
       linear-gradient(180deg,var(--card),rgba(8,17,10,.7));
     box-shadow:0 4px 20px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.03);
-    animation:none;
   }
   .card.picked:hover {
     opacity:.92;
@@ -287,6 +286,47 @@
     100% { transform:scale(1) rotate(0); opacity:1; }
   }
 
+  /* ═══ PO OKNIE — bursztynowy, przyciąga wzrok ═══ */
+  .card.overdue {
+    opacity:.92;
+    border-color:rgba(255,183,77,.75);
+    background:
+      repeating-linear-gradient(
+        -45deg,
+        rgba(255,183,77,.05) 0px,
+        rgba(255,183,77,.05) 14px,
+        transparent 14px,
+        transparent 28px
+      ),
+      linear-gradient(180deg,var(--card),rgba(8,17,10,.7));
+    box-shadow:0 0 26px rgba(255,183,77,.20), 0 4px 20px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04);
+    animation:overdue 3s ease-in-out infinite;
+  }
+  .card.overdue:hover {
+    opacity:1;
+    transform:translateY(-4px);
+  }
+  .card.overdue::after {
+    content:'?';
+    position:absolute; top:12px; right:12px;
+    width:32px; height:32px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:20px; font-weight:900; color:#1a1408;
+    background:linear-gradient(135deg,#ffd54f,#ff8f00);
+    border:2px solid rgba(255,236,179,.85);
+    box-shadow:0 0 14px rgba(255,183,77,.7), inset 0 1px 0 rgba(255,255,255,.4);
+    animation:overdueIcon 3s ease-in-out infinite;
+    z-index:5;
+  }
+  @keyframes overdueIcon {
+    0%,100% { transform:scale(1); }
+    50%     { transform:scale(1.12); }
+  }
+  @keyframes overdue {
+    0%,100% { box-shadow:0 0 26px rgba(255,183,77,.20), 0 4px 20px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04); }
+    50%     { box-shadow:0 0 40px rgba(255,183,77,.40), 0 4px 20px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04); }
+  }
+
   @keyframes urgent {
     0%,100% { box-shadow:0 0 28px rgba(239,83,80,.22), 0 4px 20px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04); }
     50%     { box-shadow:0 0 44px rgba(239,83,80,.42), 0 4px 20px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04); }
@@ -303,7 +343,9 @@
   .card.warn::before    { color:#ef5350; opacity:.9; }
   .card.respawn::before { color:#42a5f5; }
   .card.ready::before   { color:#ce93d8; }
-  .card.picked::before  { color:#78909c; opacity:.7; }
+  .card.picked::before  { color:#66bb6a; opacity:.6; }
+  .card.overdue::before { color:#ffb74d; opacity:.9; }
+  .card.rumor::before   { color:#42a5f5; }
 
   /* Mushroom img with halo */
   .img-wrap {
@@ -323,17 +365,19 @@
   .card.warn    .img-wrap::before { color:#ef5350; opacity:.28; }
   .card.respawn .img-wrap::before { color:#42a5f5; }
   .card.ready   .img-wrap::before { color:#ce93d8; }
-  .card.picked  .img-wrap::before { color:#78909c; opacity:.14; }
+  .card.picked  .img-wrap::before { color:#66bb6a; opacity:.12; }
+  .card.overdue .img-wrap::before { color:#ffb74d; opacity:.22; }
   .card.rumor   .img-wrap::before { color:#42a5f5; opacity:.16; }
 
   .img-wrap img {
     width:82px; height:82px; image-rendering:pixelated;
     position:relative; z-index:1;
     filter:drop-shadow(0 6px 14px rgba(0,0,0,.6));
-    transition:transform .3s;
+    transition:transform .3s, filter .3s;
   }
   .card:hover .img-wrap img { transform:scale(1.06); }
   .card.picked .img-wrap img { filter:drop-shadow(0 6px 14px rgba(0,0,0,.6)) grayscale(.35); }
+  .card.overdue .img-wrap img { filter:drop-shadow(0 6px 14px rgba(0,0,0,.6)) saturate(1.15); }
 
   .name {
     font-size:13.5px; font-weight:700; color:var(--txt);
@@ -369,7 +413,8 @@
   .card.warn    .status-pill { color:#ef5350; border-color:rgba(239,83,80,.5); background:rgba(239,83,80,.12); }
   .card.respawn .status-pill { color:#64b5f6; border-color:rgba(100,181,246,.4); background:rgba(66,165,245,.10); }
   .card.ready   .status-pill { color:#ce93d8; border-color:rgba(206,147,216,.45); background:rgba(206,147,216,.10); }
-  .card.picked  .status-pill { color:#a5c9a8; border-color:rgba(165,201,168,.5); background:rgba(120,144,156,.15); }
+  .card.picked  .status-pill { color:#81c784; border-color:rgba(129,199,132,.5); background:rgba(102,187,106,.12); }
+  .card.overdue .status-pill { color:#ffb74d; border-color:rgba(255,183,77,.55); background:rgba(255,183,77,.14); }
   .card.rumor   .status-pill { color:#64b5f6; border-color:rgba(100,181,246,.4); background:rgba(66,165,245,.10); }
 
   .loc {
@@ -379,7 +424,8 @@
     padding:0 4px;
   }
   .loc b { color:#c5e1a5; font-weight:600; }
-  .card.picked .loc b { color:#a5c9a8; }
+  .card.picked .loc b { color:#a5d6a7; }
+  .card.overdue .loc b { color:#ffcc80; }
 
   /* Timer */
   .timer-block {
@@ -397,17 +443,19 @@
     font-size:34px; font-weight:800; letter-spacing:-1px;
     line-height:1; color:var(--lime);
     text-shadow:0 0 20px rgba(174,213,129,.25);
-    transition:color .3s, text-shadow .3s;
+    transition:color .3s, text-shadow .3s, font-size .3s;
   }
   .card.warn    .timer-big { color:#ef5350; text-shadow:0 0 22px rgba(239,83,80,.5); }
   .card.respawn .timer-big { color:#64b5f6; text-shadow:0 0 20px rgba(66,165,245,.25); }
   .card.ready   .timer-big { color:#ce93d8; text-shadow:0 0 20px rgba(206,147,216,.3); }
-  .card.picked  .timer-big { color:#a5c9a8; text-shadow:0 0 12px rgba(165,201,168,.2); font-size:30px; }
+  .card.picked  .timer-big { color:#a5d6a7; text-shadow:0 0 12px rgba(165,214,167,.2); font-size:30px; }
+  .card.overdue .timer-big { color:#ffb74d; text-shadow:0 0 16px rgba(255,183,77,.4); font-size:26px; letter-spacing:0; }
 
   .timer-sub {
     font-size:10.5px; color:var(--mut); font-weight:600;
     font-family:'JetBrains Mono',monospace;
   }
+  .card.overdue .timer-hint { color:#ffb74d; font-weight:700; }
 
   /* Progress bar */
   .bar-track {
@@ -425,7 +473,8 @@
   .card.warn    .bar-fill { color:#ef5350; }
   .card.respawn .bar-fill { color:#42a5f5; }
   .card.ready   .bar-fill { color:#ce93d8; }
-  .card.picked  .bar-fill { color:#66bb6a; opacity:.6; }
+  .card.picked  .bar-fill { color:#66bb6a; opacity:.55; }
+  .card.overdue .bar-fill { color:#ffb74d; opacity:.5; }
 
   /* ═══ Empty ═══ */
   .empty {
@@ -452,7 +501,10 @@
     .img-wrap img { width:66px; height:66px; }
     .timer-big { font-size:26px; }
     .card.picked .timer-big { font-size:23px; }
-    .card.picked::after { width:26px; height:26px; font-size:15px; top:10px; right:10px; }
+    .card.overdue .timer-big { font-size:20px; }
+    .card.picked::after,
+    .card.overdue::after { width:26px; height:26px; font-size:15px; top:10px; right:10px; }
+    .card.overdue::after { font-size:16px; }
     .target { flex-direction:column; align-items:flex-start; gap:12px; padding:16px 18px; }
   }
   @media (max-width:380px) {
@@ -530,10 +582,15 @@ function computeCard(t, now) {
         mainTxt = fmt(left);
         subTxt = `znika o ${fmtClock(t.expiresAt)}`;
 
-        if (t.picked) { cls='picked'; cat='Zebrany'; hintTxt='timer leci dalej'; }
-        else if (t.source === 'chat') { cls='rumor'; cat='Pogłoska'; hintTxt='czekam na detektor'; }
-        else if (left < 60_000) { cls='warn'; cat='Zaraz zniknie'; hintTxt='pozostało'; }
-        else { cls='alive'; cat='Aktywny'; hintTxt='pozostało'; }
+        if (t.picked) {
+            cls='picked'; cat='Zebrany'; hintTxt='timer leci dalej';
+        } else if (t.source === 'chat') {
+            cls='rumor'; cat='Pogłoska'; hintTxt='czekam na detektor';
+        } else if (left < 60_000) {
+            cls='warn'; cat='Zaraz zniknie'; hintTxt='pozostało';
+        } else {
+            cls='alive'; cat='Aktywny'; hintTxt='pozostało';
+        }
     } else {
         const toMin = t.respawnMin ? t.respawnMin - now : 0;
         const toMax = t.respawnMax ? t.respawnMax - now : 0;
@@ -552,8 +609,8 @@ function computeCard(t, now) {
             mainTxt = fmt(toMax);
             subTxt = `do ${fmtClock(t.respawnMax)}`;
         } else {
-            cls='picked'; cat='Po oknie'; hintTxt='sprawdź mapę';
-            mainTxt = '—'; subTxt = '—';
+            cls='overdue'; cat='Po oknie'; hintTxt='sprawdź mapę';
+            mainTxt = 'TERAZ'; subTxt = 'okno minęło';
         }
     }
     return { cls, mainTxt, hintTxt, subTxt, cat, progress, lvlTag, short };
