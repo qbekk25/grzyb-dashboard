@@ -26,80 +26,111 @@
   .badge { display:inline-block; padding:2px 9px; border-radius:999px;
            background:rgba(0,0,0,.5); border:1px solid var(--edge); font-size:11px; }
 
-  /* 3 duże karty obok siebie, na węższych ekranach zawijają się */
+  .section-header {
+    margin:32px 0 16px; display:flex; align-items:center; gap:14px;
+  }
+  .section-header .title {
+    font-size:15px; font-weight:700; color:var(--amber);
+    text-transform:uppercase; letter-spacing:1.6px;
+    padding:6px 14px; border-radius:8px;
+    background:linear-gradient(180deg,rgba(255,183,77,.15),rgba(255,183,77,.05));
+    border:1px solid rgba(255,183,77,.35);
+  }
+  .section-header .count {
+    font-size:12px; color:var(--mut); font-weight:600;
+  }
+  .section-header .line {
+    flex:1; height:1px; background:linear-gradient(90deg,rgba(255,183,77,.3),transparent);
+  }
+
+  /* ─── PIONOWE (portrait) karty ─── */
   .grid {
     display:grid;
-    grid-template-columns:repeat(3, 1fr);
-    gap:18px;
-    margin-bottom:24px;
+    grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));
+    gap:16px;
+    margin-bottom:8px;
   }
-  @media (max-width:1100px) { .grid { grid-template-columns:repeat(2, 1fr); } }
-  @media (max-width:720px)  { .grid { grid-template-columns:1fr; } }
+  @media (min-width:1400px) { .grid { grid-template-columns:repeat(5, 1fr); } }
+  @media (max-width:520px)  { .grid { grid-template-columns:repeat(2, 1fr); gap:10px; } }
 
   .card {
     background:linear-gradient(180deg,var(--card),#08110a);
-    border:1px solid var(--edge); border-left:5px solid var(--edge);
-    border-radius:14px; padding:20px; display:flex; flex-direction:column;
-    gap:14px; transition:transform .15s, box-shadow .25s;
-    min-height:220px;
+    border:1px solid var(--edge); border-top:4px solid var(--edge);
+    border-radius:14px; padding:18px 14px;
+    display:flex; flex-direction:column; align-items:center; text-align:center;
+    gap:10px; transition:transform .15s, box-shadow .25s;
+    min-height:280px;
   }
   .card:hover { transform:translateY(-3px); box-shadow:0 8px 24px rgba(0,0,0,.55); }
-  .card.alive   { border-color:#4caf50; border-left-color:#4caf50; box-shadow:0 0 18px rgba(76,175,80,.15); }
-  .card.warn    { border-color:#ef5350; border-left-color:#ef5350; box-shadow:0 0 18px rgba(239,83,80,.2); }
-  .card.respawn { border-color:#42a5f5; border-left-color:#42a5f5; }
-  .card.ready   { border-color:#ce93d8; border-left-color:#ce93d8; box-shadow:0 0 18px rgba(206,147,216,.2); }
-  .card.picked  { border-color:#546e7a; border-left-color:#546e7a; opacity:.65; }
-  .card.rumor   { border-color:#42a5f5; border-left-color:#42a5f5; opacity:.85; }
+  .card.alive   { border-color:#4caf50; border-top-color:#4caf50; box-shadow:0 0 18px rgba(76,175,80,.15); }
+  .card.warn    { border-color:#ef5350; border-top-color:#ef5350; box-shadow:0 0 18px rgba(239,83,80,.2); }
+  .card.respawn { border-color:#42a5f5; border-top-color:#42a5f5; }
+  .card.ready   { border-color:#ce93d8; border-top-color:#ce93d8; box-shadow:0 0 18px rgba(206,147,216,.2); }
+  .card.picked  { border-color:#546e7a; border-top-color:#546e7a; opacity:.65; }
+  .card.rumor   { border-color:#42a5f5; border-top-color:#42a5f5; opacity:.85; }
 
-  .card-top { display:flex; align-items:center; gap:14px; }
-  .card img { width:72px; height:72px; image-rendering:pixelated; flex-shrink:0; }
-  .name { font-size:16px; font-weight:700; color:#e8f5e9; line-height:1.25;
-          overflow:hidden; text-overflow:ellipsis; display:-webkit-box;
-          -webkit-line-clamp:2; -webkit-box-orient:vertical; }
-  .lvl-tag { display:inline-block; margin-left:6px; padding:1px 7px; font-size:11px;
-             border-radius:6px; background:rgba(255,183,77,.15); color:#ffb74d;
-             border:1px solid rgba(255,183,77,.35); vertical-align:middle; font-weight:600; }
+  .card img {
+    width:88px; height:88px; image-rendering:pixelated; flex-shrink:0;
+    filter:drop-shadow(0 4px 10px rgba(0,0,0,.5));
+  }
+  .name {
+    font-size:14px; font-weight:700; color:#e8f5e9; line-height:1.25;
+    overflow:hidden; display:-webkit-box; -webkit-line-clamp:2;
+    -webkit-box-orient:vertical; min-height:36px;
+    align-items:center; justify-content:center;
+  }
+  .lvl-tag {
+    display:inline-block; padding:2px 9px; font-size:11px;
+    border-radius:6px; background:rgba(255,183,77,.15); color:#ffb74d;
+    border:1px solid rgba(255,183,77,.35); font-weight:700;
+  }
 
-  .cat { font-size:10px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase;
-         color:var(--mut); }
-  .card.alive   .cat { color:#66bb6a; }
-  .card.warn    .cat { color:#ef5350; }
-  .card.respawn .cat { color:#64b5f6; }
-  .card.ready   .cat { color:#ce93d8; }
+  .cat {
+    font-size:10px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase;
+    color:var(--mut); padding:3px 9px; border-radius:6px;
+    background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.06);
+  }
+  .card.alive   .cat { color:#66bb6a; border-color:rgba(102,187,106,.35); background:rgba(76,175,80,.1); }
+  .card.warn    .cat { color:#ef5350; border-color:rgba(239,83,80,.4); background:rgba(239,83,80,.1); }
+  .card.respawn .cat { color:#64b5f6; border-color:rgba(100,181,246,.4); background:rgba(66,165,245,.1); }
+  .card.ready   .cat { color:#ce93d8; border-color:rgba(206,147,216,.4); background:rgba(206,147,216,.1); }
   .card.picked  .cat { color:#607d8b; }
   .card.rumor   .cat { color:#64b5f6; }
 
-  .card-mid { display:flex; flex-direction:column; gap:4px; flex:1; }
-  .meta { font-size:12px; color:var(--mut); line-height:1.5; }
-  .meta b { color:#c5e1a5; font-weight:600; }
+  .loc {
+    font-size:11px; color:var(--mut); line-height:1.4;
+    overflow:hidden; display:-webkit-box; -webkit-line-clamp:2;
+    -webkit-box-orient:vertical; min-height:30px;
+  }
+  .loc b { color:#c5e1a5; font-weight:600; }
 
   .timer-big {
-    font-family:'Courier New',monospace; font-size:34px; font-weight:800;
+    font-family:'Courier New',monospace; font-size:32px; font-weight:800;
     color:var(--lime); line-height:1; letter-spacing:1px;
+    margin-top:auto; padding-top:8px;
   }
   .card.warn    .timer-big { color:#ef5350; }
   .card.respawn .timer-big { color:#64b5f6; }
   .card.ready   .timer-big { color:#ce93d8; }
   .card.picked  .timer-big { color:#808080; }
 
-  .card-bottom { display:flex; justify-content:space-between; align-items:flex-end;
-                 border-top:1px solid rgba(255,255,255,.06); padding-top:12px; }
-  .sub-txt { font-size:11px; color:var(--mut); }
+  .sub-txt { font-size:10.5px; color:var(--mut); letter-spacing:.4px; }
+  .sub-txt.strong { color:#c5e1a5; font-weight:600; font-size:12px; }
 
-  .section { margin:28px 0 14px; font-size:13px; font-weight:700; color:var(--amber);
-             text-transform:uppercase; letter-spacing:1.4px;
-             border-bottom:1px solid rgba(255,183,77,.2); padding-bottom:8px; }
-  .empty { color:#4a5a4b; font-size:13px; padding:24px; text-align:center;
-           background:rgba(0,0,0,.25); border-radius:10px; font-style:italic;
-           border:1px dashed var(--edge); }
+  .empty {
+    grid-column:1/-1; color:#4a5a4b; font-size:13px; padding:24px;
+    text-align:center; background:rgba(0,0,0,.25); border-radius:10px;
+    font-style:italic; border:1px dashed var(--edge);
+  }
 
   .target-card {
     background:linear-gradient(180deg,rgba(60,120,40,.25),rgba(30,70,20,.1));
     border:1px solid #8bc34a; border-radius:12px; padding:16px 18px;
     display:flex; flex-direction:column; gap:6px; margin-bottom:14px;
   }
-  .target-card .name { font-size:15px; }
-  .target-card .meta { font-size:12px; }
+  .target-card .name { font-size:15px; text-align:left; -webkit-line-clamp:1; min-height:auto; }
+  .target-card .meta { font-size:12px; color:var(--mut); text-align:left; }
+  .target-card .meta b { color:#c5e1a5; }
 
   .queue-wrap { margin-bottom:18px; }
   .queue-label { font-size:11px; color:var(--mut); margin-bottom:8px;
@@ -123,8 +154,7 @@
 <div id="target"></div>
 <div id="queue" class="queue-wrap"></div>
 
-<div class="section">Timery grzybów</div>
-<div id="grid" class="grid"></div>
+<div id="sections"></div>
 
 <footer id="foot"></footer>
 
@@ -160,76 +190,91 @@ function esc(s) {
         ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
 }
 
-function renderTimers() {
+function renderCard(t, now) {
+    const short = (t.type || '').replace(/^Ogromn\S+\s/, '');
+    const lvlTag = t.level ? `<span class="lvl-tag">${t.level} lvl</span>` : '';
+    let cls, mainTxt, subTxt, cat, extraTxt = '';
+
+    if (t.state === 'seen') {
+        const left = Math.max(0, (t.expiresAt || now) - now);
+        mainTxt = fmt(left);
+        if (t.picked) {
+            cls='picked'; cat='Zebrany'; subTxt='timer leci dalej';
+        } else if (t.source === 'chat') {
+            cls='rumor'; cat='Pogłoska'; subTxt='czekam na detektor';
+        } else if (left < 60_000) {
+            cls='warn'; cat='Zaraz zniknie'; subTxt='zniknie o';
+            extraTxt = fmtClock(t.expiresAt);
+        } else {
+            cls='alive'; cat='Aktywny'; subTxt='zniknie o';
+            extraTxt = fmtClock(t.expiresAt);
+        }
+    } else {
+        const toMin = t.respawnMin ? t.respawnMin - now : 0;
+        const toMax = t.respawnMax ? t.respawnMax - now : 0;
+        if (toMin > 0) {
+            cls='respawn'; cat='Respawn'; mainTxt=fmt(toMin);
+            subTxt='okno'; extraTxt = `${fmtClock(t.respawnMin)} – ${fmtClock(t.respawnMax)}`;
+        } else if (toMax > 0) {
+            cls='ready'; cat='Może się pojawić'; mainTxt='?';
+            subTxt='do'; extraTxt = fmtClock(t.respawnMax);
+        } else {
+            cls='picked'; cat='Po oknie'; mainTxt='—'; subTxt='sprawdź mapę';
+        }
+    }
+
+    const loc = t.locMap ? `<b>${esc(t.locMap)}</b> (${t.locX}, ${t.locY})` : '—';
+    const img = t.img ? `<img src="${esc(t.img)}" alt="">` : '<div style="width:88px;height:88px;"></div>';
+
+    return `<div class="card ${cls}">
+        ${img}
+        <div class="name">${esc(short)}</div>
+        <div>${lvlTag}</div>
+        <div class="cat">${cat}</div>
+        <div class="loc">${loc}</div>
+        <div class="sub-txt">${subTxt}</div>
+        <div class="sub-txt strong">${extraTxt || '—'}</div>
+        <div class="timer-big">${mainTxt}</div>
+    </div>`;
+}
+
+function renderSections() {
     const now = Date.now();
-    const grid = document.getElementById('grid');
-    const list = (state?.timers || []).slice().sort((a, b) => {
+    const timers = state?.timers || [];
+    const lvl100 = timers.filter(t => (t.level || 0) < 150);
+    const lvl200 = timers.filter(t => (t.level || 0) >= 150);
+
+    const sectionsEl = document.getElementById('sections');
+
+    const sortFn = (a, b) => {
         const la = a.state === 'seen' ? (a.expiresAt || now) - now : (a.respawnMin || now) - now;
         const lb = b.state === 'seen' ? (b.expiresAt || now) - now : (b.respawnMin || now) - now;
         return la - lb;
-    });
+    };
 
-    if (!list.length) {
-        grid.innerHTML = '<div class="empty" style="grid-column:1/-1;">Brak aktywnych timerów — bot nie wykrył jeszcze żadnego grzyba</div>';
-        return;
+    const makeSection = (title, list) => {
+        const cardsHtml = list.length
+            ? list.slice().sort(sortFn).map(t => renderCard(t, now)).join('')
+            : `<div class="empty">Brak aktywnych timerów</div>`;
+        return `
+            <div class="section-header">
+                <span class="title">${title}</span>
+                <span class="count">${list.length} ${list.length === 1 ? 'grzyb' : 'grzybów'}</span>
+                <span class="line"></span>
+            </div>
+            <div class="grid">${cardsHtml}</div>
+        `;
+    };
+
+    let html = '';
+    html += makeSection('100 lvl', lvl100);
+    html += makeSection('200 lvl', lvl200);
+
+    if (!lvl100.length && !lvl200.length) {
+        html = `<div class="empty" style="margin-top:20px;">Brak aktywnych timerów — bot nie wykrył jeszcze żadnego grzyba</div>`;
     }
 
-    grid.innerHTML = list.map(t => {
-        const short = (t.type || '').replace(/^Ogromn\S+\s/, '');
-        const lvlTag = t.level ? `<span class="lvl-tag">${t.level}</span>` : '';
-        let cls, mainTxt, subTxt, cat, extraTxt = '';
-
-        if (t.state === 'seen') {
-            const left = Math.max(0, (t.expiresAt || now) - now);
-            mainTxt = fmt(left);
-            if (t.picked) {
-                cls='picked'; cat='ZEBRANY'; subTxt='timer leci dalej';
-            } else if (t.source === 'chat') {
-                cls='rumor'; cat='POGŁOSKA'; subTxt='czekam na detektor';
-            } else if (left < 60_000) {
-                cls='warn'; cat='ZARAZ ZNIKNIE'; subTxt='zniknie o';
-                extraTxt = fmtClock(t.expiresAt);
-            } else {
-                cls='alive'; cat='AKTYWNY'; subTxt='zniknie o';
-                extraTxt = fmtClock(t.expiresAt);
-            }
-        } else {
-            const toMin = t.respawnMin ? t.respawnMin - now : 0;
-            const toMax = t.respawnMax ? t.respawnMax - now : 0;
-            if (toMin > 0) {
-                cls='respawn'; cat='RESPAWN'; mainTxt=fmt(toMin);
-                subTxt='okno';
-                extraTxt = `${fmtClock(t.respawnMin)} – ${fmtClock(t.respawnMax)}`;
-            } else if (toMax > 0) {
-                cls='ready'; cat='MOŻE SIĘ POJAWIĆ'; mainTxt='SPRAWDŹ';
-                subTxt='do';
-                extraTxt = fmtClock(t.respawnMax);
-            } else {
-                cls='picked'; cat='PO OKNIE'; mainTxt='—'; subTxt='sprawdź mapę';
-            }
-        }
-
-        const loc = t.locMap ? `${esc(t.locMap)} (${t.locX}, ${t.locY})` : '—';
-        const img = t.img ? `<img src="${esc(t.img)}" alt="">` : '<div style="width:72px;"></div>';
-
-        return `<div class="card ${cls}">
-            <div class="card-top">
-                ${img}
-                <div class="name">${esc(short)}${lvlTag}</div>
-            </div>
-            <div class="card-mid">
-                <div class="cat">${cat}</div>
-                <div class="meta">Lokalizacja: <b>${loc}</b></div>
-            </div>
-            <div class="card-bottom">
-                <div>
-                    <div class="sub-txt">${subTxt}</div>
-                    <div class="sub-txt" style="color:#c5e1a5;font-size:13px;font-weight:600;">${extraTxt || '—'}</div>
-                </div>
-                <div class="timer-big">${mainTxt}</div>
-            </div>
-        </div>`;
-    }).join('');
+    sectionsEl.innerHTML = html;
 }
 
 function renderTargetAndQueue() {
@@ -240,7 +285,7 @@ function renderTargetAndQueue() {
         const t = state.target;
         const phases = { approach:'Podejście', dialog:'Rozmowa', farming:'Zbiory', skarbiec:'Skarbiec' };
         tEl.innerHTML = `<div class="target-card">
-            <div class="cat" style="color:#aed581;">Aktualny cel</div>
+            <div class="cat" style="color:#aed581;text-align:left;">Aktualny cel</div>
             <div class="name">${esc(t.name)}</div>
             <div class="meta">Lokalizacja: <b>${esc(t.map)} (${t.x}, ${t.y})</b> &nbsp;·&nbsp; Faza: <b style="color:#aed581;">${phases[t.phase] || t.phase}</b></div>
         </div>`;
@@ -276,7 +321,7 @@ function renderBar() {
 function render() {
     renderBar();
     renderTargetAndQueue();
-    renderTimers();
+    renderSections();
     document.getElementById('foot').textContent =
         'Margonem Radar · ' + new Date().toLocaleString();
 }
