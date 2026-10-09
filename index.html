@@ -482,9 +482,10 @@ function esc(s) {
         ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
 }
 
-function renderCard(t, now) {
+/* ═══ Oblicza wartości karty — używane przy pełnym renderze i ticku ═══ */
+function computeCard(t, now) {
     const short = (t.type || '').replace(/^Ogromn\S+\s/, '');
-    const lvlTag = t.level ? `<div class="lvl-tag">${t.level} LVL</div>` : '';
+    const lvlTag = t.level ? `${t.level} LVL` : '';
     let cls, mainTxt, hintTxt, subTxt, cat, progress = 0;
 
     if (t.state === 'seen') {
@@ -526,25 +527,29 @@ function renderCard(t, now) {
             subTxt = '—';
         }
     }
+    return { cls, mainTxt, hintTxt, subTxt, cat, progress, lvlTag, short };
+}
 
+function buildCard(t, now) {
+    const c = computeCard(t, now);
     const loc = t.locMap ? `<b>${esc(t.locMap)}</b><br>(${t.locX}, ${t.locY})` : '—';
     const img = t.img ? `<img src="${esc(t.img)}" alt="">` : '';
-
-    return `<div class="card ${cls}">
+    return `<div class="card ${c.cls}" data-key="${esc(t.key)}">
         <div class="img-wrap">${img}</div>
-        <div class="name">${esc(short)}</div>
-        ${lvlTag}
-        <div class="status-pill"><span class="pip"></span>${cat}</div>
+        <div class="name">${esc(c.short)}</div>
+        ${c.lvlTag ? `<div class="lvl-tag">${c.lvlTag}</div>` : ''}
+        <div class="status-pill"><span class="pip"></span>${c.cat}</div>
         <div class="loc">${loc}</div>
         <div class="timer-block">
-            <div class="timer-hint">${hintTxt}</div>
-            <div class="timer-big">${mainTxt}</div>
-            <div class="timer-sub">${subTxt}</div>
+            <div class="timer-hint">${c.hintTxt}</div>
+            <div class="timer-big">${c.mainTxt}</div>
+            <div class="timer-sub">${c.subTxt}</div>
         </div>
-        <div class="bar-track"><div class="bar-fill" style="width:${progress}%"></div></div>
+        <div class="bar-track"><div class="bar-fill" style="width:${c.progress}%"></div></div>
     </div>`;
 }
 
+/* ═══ Pełny render sekcji — wywoływany TYLKO gdy zmienią się dane z Firebase ═══ */
 function renderSections() {
     const now = Date.now();
     const timers = state?.timers || [];
@@ -559,7 +564,7 @@ function renderSections() {
 
     const makeSection = (level, list) => {
         const cardsHtml = list.length
-            ? list.slice().sort(sortFn).map(t => renderCard(t, now)).join('')
+            ? list.slice().sort(sortFn).map(t => buildCard(t, now)).join('')
             : `<div class="empty">Brak aktywnych timerów dla tego poziomu</div>`;
         const word = list.length === 1 ? 'grzyb' : (list.length >= 2 && list.length <= 4 ? 'grzyby' : 'grzybów');
         return `<section class="section">
@@ -568,18 +573,15 @@ function renderSections() {
                     <span class="num">${level}</span>
                     <span class="txt">LVL</span>
                 </div>
-                <span class="count-pill">${list.length} ${word}</span>
+                <span class="count-pill" data-count="${level}">${list.length} ${word}</span>
                 <span class="line"></span>
             </div>
             <div class="cards">${cardsHtml}</div>
         </section>`;
     };
 
-    let html = '';
-    html += makeSection(100, lvl100);
-    html += makeSection(200, lvl200);
-
-    document.getElementById('sections').innerHTML = html;
+    document.getElementById('sections').innerHTML =
+        makeSection(100, lvl100) + makeSection(200, lvl200);
 }
 
 function renderTargetAndQueue() {
@@ -615,7 +617,7 @@ function renderTargetAndQueue() {
     }
 }
 
-function renderHeader() {
+function renderHeaderFull() {
     const now = Date.now();
     const stale = now - lastUpdate > STALE_MS;
     document.getElementById('dot').className = 'dot-live' + (stale ? ' off' : '');
@@ -636,31 +638,97 @@ function renderHeader() {
         <span class="badge ${state.grzEnabled ? 'on' : ''}">${state.grzEnabled ? 'ON' : 'OFF'}</span>
         <span class="badge ${state.isRunning ? 'run' : 'idle'}">${state.isRunning ? 'biega' : 'stop'}</span>
         <span class="sep">·</span>
-        <span style="opacity:.7;">aktualizacja ${agoTxt}</span>
+        <span class="ago-txt" style="opacity:.7;">aktualizacja ${agoTxt}</span>
     `;
 }
 
-function render() {
-    renderHeader();
+/* ═══ Pełny render — wywoływany przy każdej zmianie z Firebase ═══ */
+function fullRender() {
+    renderHeaderFull();
     renderTargetAndQueue();
     renderSections();
     document.getElementById('foot').textContent =
         'Margonem Radar · ' + new Date().toLocaleString();
 }
 
+/* ═══ Tick — co sekundę aktualizuje TYLKO dynamiczne wartości (bez przebudowy DOM) ═══ */
+function tick() {
+    if (!state) return;
+    const now = Date.now();
+
+    // 1) Nagłówek — tylko tekst "ago" i kropka
+    const stale = now - lastUpdate > STALE_MS;
+    const dot = document.getElementById('dot');
+    const dotCls = 'dot-live' + (stale ? ' off' : '');
+    if (dot.className !== dotCls) dot.className = dotCls;
+
+    const agoEl = document.querySelector('.ago-txt');
+    if (agoEl && state) {
+        const ago = Math.round((now - lastUpdate) / 1000);
+        const agoTxt = ago < 3 ? 'teraz' : `${ago}s temu`;
+        const expected = 'aktualizacja ' + agoTxt;
+        if (agoEl.textContent !== expected) agoEl.textContent = expected;
+    }
+
+    // 2) Karty — aktualizuj tylko liczby, klasy i szerokość progress bara
+    const map = new Map((state.timers || []).map(t => [t.key, t]));
+    document.querySelectorAll('.card[data-key]').forEach(card => {
+        const t = map.get(card.dataset.key);
+        if (!t) return;
+        const c = computeCard(t, now);
+
+        // klasa (alive/warn/respawn/...) — tylko gdy naprawdę inna
+        const newCls = 'card ' + c.cls;
+        if (card.className !== newCls) card.className = newCls;
+
+        // timer-główny
+        const timerBig = card.querySelector('.timer-big');
+        if (timerBig && timerBig.textContent !== c.mainTxt) {
+            timerBig.textContent = c.mainTxt;
+        }
+
+        // podpis pod timerem (godzina / okno)
+        const timerSub = card.querySelector('.timer-sub');
+        if (timerSub && timerSub.textContent !== c.subTxt) {
+            timerSub.textContent = c.subTxt;
+        }
+
+        // hint nad timerem
+        const timerHint = card.querySelector('.timer-hint');
+        if (timerHint && timerHint.textContent !== c.hintTxt) {
+            timerHint.textContent = c.hintTxt;
+        }
+
+        // pigułka statusu (z kropką)
+        const pill = card.querySelector('.status-pill');
+        if (pill) {
+            const expected = `<span class="pip"></span>${c.cat}`;
+            if (pill.innerHTML !== expected) pill.innerHTML = expected;
+        }
+
+        // progress bar
+        const bar = card.querySelector('.bar-fill');
+        if (bar) {
+            const w = c.progress + '%';
+            if (bar.style.width !== w) bar.style.width = w;
+        }
+    });
+}
+
+/* ═══ Firebase — pełny render tylko gdy zmienią się dane ═══ */
 const stateRef = ref(db, `mushrooms/${TOKEN}`);
 onValue(stateRef, (snap) => {
     const val = snap.val();
-    if (!val) { state = null; render(); return; }
+    if (!val) { state = null; fullRender(); return; }
     state = val;
     lastUpdate = Date.now();
-    render();
+    fullRender();
 }, (err) => {
     console.error('FB err:', err);
     document.getElementById('conn').innerHTML = 'Błąd Firebase: ' + err.message;
 });
 
-setInterval(render, 1000);
+setInterval(tick, 1000);
 </script>
 </body>
 </html>
