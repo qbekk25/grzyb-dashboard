@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🍄 Grzyby — live</title>
+<style>
+  :root {
+    --bg:#08110a; --card:#10231a; --edge:#2f5d36; --edge2:#3f7a48;
+    --lime:#aed581; --amber:#ffb74d; --red:#ef5350; --blue:#42a5f5;
+    --txt:#d7e8cf; --mut:#7f9a80;
+  }
+  * { box-sizing:border-box; }
+  body {
+    background:radial-gradient(ellipse at top,#0d1f13,#040805);
+    color:var(--txt); font-family:'Poppins','Segoe UI',sans-serif;
+    margin:0; padding:20px; min-height:100vh;
+  }
+  h1 { margin:0 0 6px; font-size:22px; color:var(--lime); letter-spacing:.5px; }
+  #bar { font-size:12px; color:var(--mut); margin-bottom:18px; display:flex;
+         align-items:center; gap:8px; flex-wrap:wrap; }
+  .live { display:inline-block; width:9px; height:9px; background:#4caf50;
+          border-radius:50%; box-shadow:0 0 8px #4caf50; animation:p 1.4s infinite; }
+  .live.off { background:#666; box-shadow:none; animation:none; }
+  @keyframes p { 50% { opacity:.35; } }
+  .badge { display:inline-block; padding:2px 8px; border-radius:999px;
+           background:rgba(0,0,0,.5); border:1px solid var(--edge); font-size:11px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:14px; }
+  .card {
+    background:linear-gradient(180deg,var(--card),#08110a);
+    border:1px solid var(--edge); border-left:4px solid var(--edge);
+    border-radius:12px; padding:14px; display:flex; gap:12px; align-items:center;
+    transition:transform .15s, box-shadow .2s;
+  }
+  .card:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,.5); }
+  .card.alive   { border-color:#4caf50; border-left-color:#4caf50; box-shadow:0 0 14px rgba(76,175,80,.15); }
+  .card.warn    { border-color:#ef5350; border-left-color:#ef5350; box-shadow:0 0 14px rgba(239,83,80,.2); }
+  .card.respawn { border-color:#42a5f5; border-left-color:#42a5f5; }
+  .card.ready   { border-color:#ce93d8; border-left-color:#ce93d8; box-shadow:0 0 14px rgba(206,147,216,.2); }
+  .card.picked  { border-color:#546e7a; border-left-color:#546e7a; opacity:.65; }
+  .card.rumor   { border-color:#42a5f5; border-left-color:#42a5f5; opacity:.85; }
+  .card img { width:56px; height:56px; image-rendering:pixelated; flex-shrink:0; }
+  .card .body { flex:1; min-width:0; }
+  .name { font-size:14px; font-weight:700; color:#e8f5e9; white-space:nowrap;
+          overflow:hidden; text-overflow:ellipsis; }
+  .meta { font-size:11px; color:var(--mut); line-height:1.4; margin-top:2px; }
+  .cat { font-size:9.5px; font-weight:700; letter-spacing:1px; text-transform:uppercase; }
+  .timer { font-family:'Courier New',monospace; font-size:22px; font-weight:800;
+           color:var(--lime); line-height:1; text-align:right; flex-shrink:0; }
+  .card.warn .timer { color:#ef5350; }
+  .card.respawn .timer { color:#64b5f6; }
+  .card.ready .timer { color:#ce93d8; }
+  .card.picked .timer { color:#808080; }
+  .section { margin:24px 0 12px; font-size:13px; font-weight:700; color:var(--amber);
+             text-transform:uppercase; letter-spacing:1.2px;
+             border-bottom:1px solid rgba(255,183,77,.2); padding-bottom:6px; }
+  .empty { color:#555; font-size:12px; padding:14px; text-align:center;
+           background:rgba(0,0,0,.25); border-radius:8px; font-style:italic; }
+  .target-card { background:linear-gradient(180deg,rgba(60,120,40,.25),rgba(30,70,20,.1));
+                 border:1px solid #8bc34a; border-radius:10px; padding:12px;
+                 display:flex; gap:14px; align-items:center; margin-bottom:10px; }
+  .target-card .icon { font-size:28px; }
+  .chip { display:inline-block; padding:3px 9px; border-radius:999px;
+          background:rgba(124,179,66,.12); border:1px solid var(--edge2);
+          font-size:11px; margin:2px 3px 2px 0; }
+  .chip b { color:var(--lime); }
+  footer { margin-top:32px; font-size:10px; color:#4a5a4b; text-align:center; }
+</style>
+</head>
+<body>
+
+<h1>🍄 Grzyby — live</h1>
+<div id="bar">
+  <span id="dot" class="live off"></span>
+  <span id="status">łączę z Firebase…</span>
+</div>
+
+<div id="target"></div>
+<div id="queue"></div>
+
+<div class="section">⏱️ Timery grzybów</div>
+<div id="grid" class="grid"></div>
+
+<div class="section">📊 Statystyki</div>
+<div id="stats"></div>
+
+<footer id="foot"></footer>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+const TOKEN = '42262d1f-c60d-477c-a30c-2e4c6fcc781a';
+
+const app = initializeApp({
+    databaseURL: 'https://grzyby-fe1e7-default-rtdb.europe-west1.firebasedatabase.app'
+});
+const db = getDatabase(app);
+
+let state = null;
+let lastUpdate = 0;
+const STALE_MS = 20_000;
+
+function fmt(ms) {
+    if (ms == null || ms <= 0) return '0:00';
+    const s = Math.floor(ms / 1000);
+    const h = Math.floor(s / 3600);
+    if (h > 0) return `${h}h ${String(Math.floor((s%3600)/60)).padStart(2,'0')}m`;
+    return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+}
+function fmtClock(ts) {
+    if (!ts) return '--:--';
+    const d = new Date(ts);
+    return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+function esc(s) {
+    return String(s ?? '').replace(/[&<>"]/g, c =>
+        ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+}
+
+function renderTimers() {
+    const now = Date.now();
+    const grid = document.getElementById('grid');
+    const list = (state?.timers || []).slice().sort((a, b) => {
+        const la = a.state === 'seen' ? (a.expiresAt || now) - now : (a.respawnMin || now) - now;
+        const lb = b.state === 'seen' ? (b.expiresAt || now) - now : (b.respawnMin || now) - now;
+        return la - lb;
+    });
+
+    if (!list.length) {
+        grid.innerHTML = '<div class="empty">Brak aktywnych timerów — bot nie wykrył jeszcze żadnego grzyba</div>';
+        return;
+    }
+
+    grid.innerHTML = list.map(t => {
+        const short = (t.type || '').replace(/^Ogromn\S+\s/, '');
+        const lvl = t.level ? ` <span style="color:#ffb74d;">[${t.level}]</span>` : '';
+        let cls, mainTxt, subTxt, cat;
+
+        if (t.state === 'seen') {
+            const left = Math.max(0, (t.expiresAt || now) - now);
+            mainTxt = fmt(left);
+            if (t.picked) { cls='picked'; cat='ZEBRANY'; subTxt='timer leci dalej'; }
+            else if (t.source === 'chat') { cls='rumor'; cat='POGŁOSKA'; subTxt='czekam na detektor'; }
+            else if (left < 60_000) { cls='warn'; cat='ZARAZ ZNIKNIE'; subTxt=`~${fmtClock(t.expiresAt)}`; }
+            else { cls='alive'; cat='AKTYWNY'; subTxt=`~${fmtClock(t.expiresAt)}`; }
+        } else {
+            const toMin = t.respawnMin ? t.respawnMin - now : 0;
+            const toMax = t.respawnMax ? t.respawnMax - now : 0;
+            if (toMin > 0) {
+                cls='respawn'; cat='RESPAWN'; mainTxt=fmt(toMin);
+                subTxt=`okno ${fmtClock(t.respawnMin)} – ${fmtClock(t.respawnMax)}`;
+            } else if (toMax > 0) {
+                cls='ready'; cat='MOŻE SIĘ POJAWIĆ'; mainTxt='SPRAWDŹ';
+                subTxt=`do ${fmtClock(t.respawnMax)}`;
+            } else {
+                cls='picked'; cat='PO OKNIE'; mainTxt='—'; subTxt='sprawdź mapę';
+            }
+        }
+        const loc = t.locMap ? `📍 ${esc(t.locMap)} (${t.locX},${t.locY})` : '📍 —';
+        const img = t.img ? `<img src="${esc(t.img)}" alt="">` : '<div style="width:56px;"></div>';
+
+        return `<div class="card ${cls}">
+            ${img}
+            <div class="body">
+                <div class="name">${esc(short)}${lvl}</div>
+                <div class="meta"><span class="cat">${cat}</span></div>
+                <div class="meta">${loc}</div>
+                <div class="meta">${subTxt}</div>
+            </div>
+            <div class="timer">${mainTxt}</div>
+        </div>`;
+    }).join('');
+}
+
+function renderTargetAndQueue() {
+    const tEl = document.getElementById('target');
+    const qEl = document.getElementById('queue');
+
+    if (state?.target) {
+        const t = state.target;
+        const icons = { approach:'🚶', dialog:'💬', farming:'🌿', skarbiec:'💰' };
+        tEl.innerHTML = `<div class="target-card">
+            <div class="icon">${icons[t.phase] || '🎯'}</div>
+            <div style="flex:1;min-width:0;">
+                <div class="name">${esc(t.name)}</div>
+                <div class="meta">📍 ${esc(t.map)} (${t.x},${t.y}) · faza: <b style="color:var(--lime);">${esc(t.phase)}</b></div>
+            </div>
+        </div>`;
+    } else {
+        tEl.innerHTML = '';
+    }
+
+    if (state?.queue?.length) {
+        qEl.innerHTML = `<div style="font-size:11px;color:var(--mut);margin-bottom:6px;">
+            ⏳ W kolejce (${state.queue.length}):</div>
+            ${state.queue.map(q => `<span class="chip"><b>${esc((q.name||'').replace(/^Ogromn\S+\s/,''))}</b> @ ${esc(q.map)}</span>`).join('')}`;
+    } else {
+        qEl.innerHTML = '';
+    }
+}
+
+function renderStats() {
+    const el = document.getElementById('stats');
+    const stats = state?.stats || {};
+    const entries = Object.entries(stats).filter(([,v]) => v > 0);
+    if (!entries.length) { el.innerHTML = '<div class="empty">Brak statystyk</div>'; return; }
+    el.innerHTML = entries.map(([name, count]) =>
+        `<span class="chip">${esc(name.replace(/^Ogromn\S+\s/,''))}: <b>${count}</b></span>`
+    ).join('');
+}
+
+function renderBar() {
+    const now = Date.now();
+    const stale = now - lastUpdate > STALE_MS;
+    const dot = document.getElementById('dot');
+    const st = document.getElementById('status');
+    dot.className = 'live' + (stale ? ' off' : '');
+    if (!state) { st.textContent = 'czekam na dane z userscriptu…'; return; }
+    const ago = Math.round((now - lastUpdate) / 1000);
+    st.innerHTML =
+        `<b>${esc(state.nick || '?')}</b> · ${esc(state.map || '?')} (${state.x},${state.y}) · ` +
+        `lvl ${state.level || '?'} · ` +
+        `<span class="badge">${state.grzEnabled ? '🍄 ON' : '⛔ OFF'}</span> ` +
+        `<span class="badge">${state.isRunning ? '▶ biega' : '⏸ stop'}</span> ` +
+        `· update ${ago}s temu`;
+}
+
+function render() {
+    renderBar();
+    renderTargetAndQueue();
+    renderTimers();
+    renderStats();
+    document.getElementById('foot').textContent =
+        'Margonem Radar · dashboard live · ' + new Date().toLocaleString();
+}
+
+const stateRef = ref(db, `mushrooms/${TOKEN}`);
+onValue(stateRef, (snap) => {
+    const val = snap.val();
+    if (!val) { state = null; render(); return; }
+    state = val;
+    lastUpdate = Date.now();
+    render();
+}, (err) => {
+    console.error('FB err:', err);
+    document.getElementById('status').textContent = '❌ Błąd Firebase: ' + err.message;
+});
+
+setInterval(render, 1000);
+</script>
+</body>
+</html>
