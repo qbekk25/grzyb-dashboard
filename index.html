@@ -215,8 +215,8 @@ function renderCard(t, now) {
         if (toMin > 0) {
             cls='respawn'; cat='Respawn'; mainTxt=fmt(toMin);
             subTxt='okno'; extraTxt = `${fmtClock(t.respawnMin)} – ${fmtClock(t.respawnMax)}`;
-        } else if (toMax > 0) {
-            cls='ready'; cat='Może się pojawić'; mainTxt='?';
+                } else if (toMax > 0) {
+            cls='ready'; cat='Może się pojawić'; mainTxt=fmt(toMax);
             subTxt='do'; extraTxt = fmtClock(t.respawnMax);
         } else {
             cls='picked'; cat='Po oknie'; mainTxt='—'; subTxt='sprawdź mapę';
